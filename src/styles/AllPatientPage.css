@@ -1,0 +1,600 @@
+/* Container and Layout */
+.all-patient-page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  overflow: hidden;
+}
+
+.all-patient-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 80px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  min-height: 0;
+}
+
+.all-patient-main.with-filters {
+  margin-top: 160px;
+}
+
+/* Header */
+.all-patient-header {
+  padding: 16px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.graph-back-button {
+  padding: 8px 16px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.graph-back-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e0;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.graph-back-button:active {
+  transform: scale(0.98);
+}
+
+.patient-info {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+  flex: 1;
+}
+
+.patient-info strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Controls Group */
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+/* Model Filter Control */
+.model-filter-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.model-filter-control label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.patient-filter-dropdown {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 200px;
+  min-width: 150px;
+}
+
+.patient-filter-dropdown:hover {
+  border-color: #cbd5e0;
+  background: #f8fafc;
+}
+
+.patient-filter-dropdown:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.individual-model-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Model Dropdown Wrapper */
+.model-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.model-filter-dropdown-btn {
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.model-filter-dropdown-btn:hover {
+  border-color: #cbd5e0;
+  background: #f8fafc;
+}
+
+.model-filter-dropdown-btn:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.model-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 4px;
+  overflow: hidden;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.model-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.model-dropdown-item:hover {
+  background-color: #f8fafc;
+}
+
+.model-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.model-dropdown-item.select-all {
+  font-weight: 600;
+  background-color: #f0f4f8;
+}
+
+.model-dropdown-item.select-all:hover {
+  background-color: #e8eef7;
+}
+
+.model-dropdown-divider {
+  height: 1px;
+  background-color: #e2e8f0;
+}
+
+.model-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.model-name {
+  flex: 1;
+}
+
+.individual-model-control label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-left: 16px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.zoom-btn {
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.15s ease;
+  line-height: 1;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e0;
+  color: #0f172a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.zoom-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.zoom-btn.reset {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+}
+
+/* Canvas Container */
+.canvas-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #f8fafc;
+}
+
+.canvas-container canvas {
+  display: block;
+}
+
+/* Zoom Indicator */
+.zoom-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Back Button - alternate position */
+.all-patient-back-button {
+  position: absolute;
+  top: 120px;
+  left: 24px;
+  z-index: 50;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2d3748;
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.all-patient-back-button:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: rgba(102, 126, 234, 0.6);
+}
+
+.all-patient-back-button:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.loading-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 20px;
+  width: 100%;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e6f0ff;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* Error State */
+.error-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 20px;
+  width: 100%;
+}
+
+.error-state .error-message {
+  max-width: 500px;
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+  color: #c53030;
+  border-left: 4px solid #e53e3e;
+  border-radius: 4px;
+  border: 1px solid #fc8181;
+}
+
+.error-banner {
+  padding: 16px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #991b1b;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.retry-button {
+  margin-left: 12px;
+  padding: 6px 12px;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s ease;
+}
+
+.retry-button:hover {
+  background: #b91c1c;
+}
+
+/* Empty State */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 20px;
+  width: 100%;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .all-patient-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .controls-group {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .patient-filter-dropdown {
+    max-width: 150px;
+    min-width: 120px;
+  }
+
+  .model-filter-dropdown-btn {
+    max-width: 140px;
+    min-width: 120px;
+  }
+
+  .zoom-controls {
+    padding-left: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .all-patient-header {
+    padding: 12px;
+  }
+
+  .patient-info {
+    font-size: 13px;
+    width: 100%;
+  }
+
+  .controls-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .patient-filter-dropdown {
+    max-width: 120px;
+    min-width: 100px;
+    font-size: 12px;
+  }
+
+  .model-filter-dropdown-btn {
+    max-width: 120px;
+    min-width: 100px;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .model-dropdown-menu {
+    max-height: 250px;
+  }
+
+  .zoom-btn {
+    padding: 6px 10px;
+    min-width: 28px;
+  }
+
+  .zoom-btn.reset {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .zoom-indicator {
+    bottom: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .all-patient-back-button {
+    top: 100px;
+    left: 16px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .all-patient-header {
+    padding: 10px;
+  }
+
+  .patient-info {
+    font-size: 12px;
+  }
+
+  .model-filter-control label,
+  .individual-model-control label {
+    font-size: 12px;
+  }
+
+  .patient-filter-dropdown {
+    max-width: 100px;
+    min-width: 80px;
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .model-filter-dropdown-btn {
+    max-width: 100px;
+    min-width: 80px;
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .model-dropdown-menu {
+    max-height: 220px;
+  }
+
+  .model-dropdown-item {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .zoom-controls {
+    gap: 6px;
+    padding-left: 8px;
+  }
+
+  .zoom-btn {
+    padding: 5px 8px;
+    min-width: 24px;
+    font-size: 14px;
+  }
+
+  .zoom-btn.reset {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+
+  .zoom-indicator {
+    bottom: 10px;
+    left: 10px;
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .all-patient-back-button {
+    top: 90px;
+    left: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+}
