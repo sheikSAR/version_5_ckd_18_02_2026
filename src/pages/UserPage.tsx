@@ -25,7 +25,7 @@ const UserPage = () => {
             <div className="action-icon">🔬</div>
             <h2 className="action-title">Single Patient Prediction</h2>
             <p className="action-description">
-              Analyze a single patient's clinical data with optional eye images
+              Analyze a single patient's clinical data with eye images
               to predict CKD status
             </p>
             <button

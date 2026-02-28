@@ -658,7 +658,7 @@ def upload_user_file(user_id):
 
     Expects:
     - file: Excel file with clinical data
-    - image_*: Optional image files (image_1, image_2, etc.) for classification
+    - image_*: image files (image_1, image_2, etc.) for classification
     - user_id: user identifier
     - session_id: session identifier (optional, generates one if not provided)
 
@@ -930,7 +930,7 @@ def user_predict():
 
     Expects:
     - data: JSON string with clinical features
-    - image_0, image_1, etc: Optional image files
+    - image_0, image_1, etc: image files
 
     Returns:
     - success: boolean
@@ -952,7 +952,7 @@ def user_predict():
             print(f"Error parsing clinical data: {e}")
             return jsonify({"success": False, "error": "Invalid clinical data JSON"}), 400
 
-        # Extract image files (optional)
+        # Extract image files
         image_files = []
         for key in request.files.keys():
             if key.startswith('image_'):

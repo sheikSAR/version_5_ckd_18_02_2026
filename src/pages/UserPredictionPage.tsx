@@ -289,7 +289,7 @@ const UserPredictionPage = () => {
         {/* Section 2: Image Upload */}
         <section className="input-section image-upload-section">
           <div className="section-header">
-            <h2>2. Eye Images (Optional)</h2>
+            <h2>2. Eye Images</h2>
             <p className="section-description">
               Upload up to 4 eye images for additional analysis
             </p>
