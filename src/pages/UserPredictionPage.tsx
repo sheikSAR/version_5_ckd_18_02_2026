@@ -307,24 +307,9 @@ const UserPredictionPage = () => {
                           alt={`Upload ${index + 1}`}
                         />
                         <button
+                          className="remove-image-button"
                           onClick={(e) => { e.stopPropagation(); removeImage(index); }}
                           title="Remove image"
-                          style={{
-                            position: 'absolute',
-                            top: '5px',
-                            right: '5px',
-                            background: 'rgba(255, 0, 0, 0.7)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '16px'
-                          }}
                         >
                           &times;
                         </button>
@@ -333,17 +318,10 @@ const UserPredictionPage = () => {
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
+                <div className="clear-images-container">
                   <button
+                    className="clear-images-button"
                     onClick={(e) => { e.stopPropagation(); setUploadedImages([]); }}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#f44336',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
                   >
                     Clear All Images
                   </button>
