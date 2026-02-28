@@ -68,4 +68,4 @@ X = table2array(Tfinal)
 results = trainCKDModelsExhaustive(X,y);
 plotCKDModelPerformance(results.metrics);
 explainCKDModels(results.metrics);
-[results, finalModel] = CKDModelPipelineAutoEval(X, y, 'CKD_finalModel.mat');
+%[results, finalModel] = CKDModelPipelineAutoEval(X, y, 'CKD_finalModel.mat');

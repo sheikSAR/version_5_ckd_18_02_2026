@@ -7,7 +7,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# test code and results of Matlab Training
 test
+CKD_Report_*/
 
 node_modules
 dist
