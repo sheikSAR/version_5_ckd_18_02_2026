@@ -156,9 +156,25 @@ def extract_image_features(image_paths):
 def run_classifier_1(patient, clinical_columns, model, scaler, image_paths=None):
     """Run Classifier 1 (CKD prediction with clinical + image features)"""
     try:
-        # Extract clinical features
-        Xc = np.array([float(patient.get(f, 0.0)) for f in clinical_columns]).reshape(1, -1)
-        Xc_scaled = scaler.transform(Xc)
+        # Convert patient dict to DataFrame
+        import pandas as pd
+        
+        # Only use the needed original clinical columns
+        # Filter original patient to ONLY predefined classifier 1 clinical features
+        # (excluding internal ones like "Patient" or "NAME" accidentally introduced)
+        patient_subset = {k: patient.get(k, 0.0) for k in clinical_columns if k in patient}
+        patient_df = pd.DataFrame([patient_subset])
+        
+        # One-hot encoding alignment (matches training)
+        patient_df = pd.get_dummies(patient_df)
+        
+        # Align columns with training columns
+        # Note: The 'clinical_columns' parameter here should ideally be the loaded cols_path
+        # list so it ensures exactly the columns the scaler expects.
+        patient_df = patient_df.reindex(columns=clinical_columns, fill_value=0)
+        
+        # Scale
+        Xc_scaled = scaler.transform(patient_df)
 
         # Extract image features if available
         if image_paths:
@@ -305,6 +321,21 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     df = pd.read_excel(excel_path)
     has_actual = egfr_col in df.columns
 
+    FULL_CLINICAL_COLUMNS = [
+        "ID", "NAME", "age", "gender", "Hypertension", "HBA", "HB", 
+        "DR_OD", "DR_SEVERITY_OD", "DME_OD", "DR_OS", "DR_SEVERITY_OS", "DME_OS", 
+        "BMI", "Durationofdiabetes", "OHA", "INSULIN", "CHO", "TRI", "DR_Label", 
+        "EGFR", "DR_OD_DR_OS", "CKD_Stage", "DR_Stage", "CKD_Label"
+    ]
+    
+    for c in FULL_CLINICAL_COLUMNS:
+        if c not in df.columns:
+            df[c] = 0.0
+
+    # Ensure any image passing logic columns are appended securely after
+    extra_cols = [c for c in df.columns if c not in FULL_CLINICAL_COLUMNS]
+    df = df[FULL_CLINICAL_COLUMNS + extra_cols]
+
     # Load classifier models if configured
     classifier_1_model = None
     classifier_1_scaler = None
@@ -408,9 +439,13 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     sklearn_predictions = {}
     for sklearn_name, sklearn_model in sklearn_models.items():
         out_name = SKLEARN_NAME_MAP[sklearn_name]
-        # Predict for all patients at once, then round
-        all_preds = sklearn_model.predict(X_all)
-        sklearn_predictions[out_name] = np.round(all_preds, 2)
+        try:
+            # Predict for all patients at once, then round
+            all_preds = sklearn_model.predict(X_all)
+            sklearn_predictions[out_name] = np.round(all_preds, 2)
+        except Exception as e:
+            print(f"Warning: sklearn model {sklearn_name} failed: {e}")
+            sklearn_predictions[out_name] = [None] * len(X_all)
 
     # Discover images from images directory
     discovered_images = discover_images(images_dir)
@@ -433,21 +468,29 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         # Get pre-computed sklearn predictions
         for sklearn_name in sklearn_models.keys():
             out_name = SKLEARN_NAME_MAP[sklearn_name]
-            pred = float(sklearn_predictions[out_name][idx])
-            predictions_dict[out_name] = pred
-            if has_actual:
-                errors_dict[out_name] = round(pred - actual, 2)
+            try:
+                pred_val = sklearn_predictions[out_name][idx]
+                if pred_val is not None:
+                    pred = float(pred_val)
+                    predictions_dict[out_name] = pred
+                    if has_actual:
+                        errors_dict[out_name] = round(pred - actual, 2)
+            except Exception as e:
+                print(f"Warning: {sklearn_name} prediction failed for patient {pid}: {e}")
 
         # Process MATLAB models using original unencoded data
         for name, model in matlab_models.items():
             out_name = MATLAB_NAME_MAP[name]
-            if name in ["EGFR_FilterModel", "YALMIP_Model"]:
-                pred = predict_simple(model, patient_original, id_col, egfr_col)
-            else:
-                pred = predict_standardized(model, patient_original)
-            predictions_dict[out_name] = pred
-            if has_actual:
-                errors_dict[out_name] = round(pred - actual, 2)
+            try:
+                if name in ["EGFR_FilterModel", "YALMIP_Model"]:
+                    pred = predict_simple(model, patient_original, id_col, egfr_col)
+                else:
+                    pred = predict_standardized(model, patient_original)
+                predictions_dict[out_name] = pred
+                if has_actual:
+                    errors_dict[out_name] = round(pred - actual, 2)
+            except Exception as e:
+                print(f"Warning: {name} prediction failed for patient {pid}: {e}")
 
         # Run Classifier 1 using original unencoded data
         classifier_1_result = None
@@ -464,7 +507,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
 
             classifier_1_result = run_classifier_1(
                 patient_original,
-                list(classifier_1_clinical_cols),
+                list(classifier_1_clinical_cols), # Must use the joblib loaded column list specifically for the scaler
                 classifier_1_model,
                 classifier_1_scaler,
                 image_paths if image_paths else None

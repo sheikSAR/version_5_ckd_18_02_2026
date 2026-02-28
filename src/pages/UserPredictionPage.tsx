@@ -20,18 +20,7 @@ interface PatientData {
   CHO: number;
   TRI: number;
   HB: number;
-  DR_OD: number;
-  DR_SEVERITY_OD: number;
-  DME_OD: number;
-  DR_OS: number;
-  DR_SEVERITY_OS: number;
-  DME_OS: number;
-  EGFR: number;
-  DR_OD_DR_OS: number;
-  CKD_Stage: number;
-  DR_Stage: number;
-  CKD_Label: number;
-  DR_Label: number; // Keeping for compatibility if needed
+  DR_Label: number;
 }
 
 interface PredictionResult {
@@ -78,7 +67,16 @@ const UserPredictionPage = () => {
   };
 
   const handleImagesUpload = (files: File[]) => {
-    setUploadedImages(files);
+    setUploadedImages((prev) => {
+      const allFiles = [...prev, ...files];
+      const uniqueFiles = Array.from(new Set(allFiles.map(f => f.name)))
+        .map(name => allFiles.find(f => f.name === name)!);
+      return uniqueFiles.slice(0, 4);
+    });
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setUploadedImages(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const handleAnalyze = async () => {
@@ -89,13 +87,8 @@ const UserPredictionPage = () => {
       return;
     }
 
-    if (uploadedImages.length < 2) {
-      setError('Please upload at least 2 eye images for analysis.');
-      return;
-    }
-
-    if (uploadedImages.length > 4) {
-      setError('Please upload a maximum of 4 eye images.');
+    if (uploadedImages.length > 0 && uploadedImages.length !== 2 && uploadedImages.length !== 4) {
+      setError('Please upload exactly 2 or 4 eye images for analysis.');
       return;
     }
 
@@ -113,12 +106,6 @@ const UserPredictionPage = () => {
         Hypertension: patientData.Hypertension,
         HBA: patientData.HBA,
         HB: patientData.HB,
-        DR_OD: patientData.DR_OD,
-        DR_SEVERITY_OD: patientData.DR_SEVERITY_OD,
-        DME_OD: patientData.DME_OD,
-        DR_OS: patientData.DR_OS,
-        DR_SEVERITY_OS: patientData.DR_SEVERITY_OS,
-        DME_OS: patientData.DME_OS,
         BMI: patientData.BMI,
         Durationofdiabetes: patientData.Durationofdiabetes,
         OHA: patientData.OHA,
@@ -126,11 +113,6 @@ const UserPredictionPage = () => {
         CHO: patientData.CHO,
         TRI: patientData.TRI,
         DR_Label: patientData.DR_Label,
-        EGFR: patientData.EGFR,
-        DR_OD_DR_OS: patientData.DR_OD_DR_OS,
-        CKD_Stage: patientData.CKD_Stage,
-        DR_Stage: patientData.DR_Stage,
-        CKD_Label: patientData.CKD_Label,
       };
 
       const sessionResponse = await axios.post(
@@ -318,16 +300,53 @@ const UserPredictionPage = () => {
                 <h3>Uploaded Images ({uploadedImages.length})</h3>
                 <div className="preview-grid">
                   {uploadedImages.map((file, index) => (
-                    <div key={index} className="image-preview-item">
+                    <div key={index} className="image-preview-item" style={{ position: 'relative' }}>
                       <div className="preview-image">
                         <img
                           src={URL.createObjectURL(file)}
                           alt={`Upload ${index + 1}`}
                         />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                          title="Remove image"
+                          style={{
+                            position: 'absolute',
+                            top: '5px',
+                            right: '5px',
+                            background: 'rgba(255, 0, 0, 0.7)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px'
+                          }}
+                        >
+                          &times;
+                        </button>
                       </div>
                       <p className="image-name">{file.name}</p>
                     </div>
                   ))}
+                </div>
+                <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setUploadedImages([]); }}
+                    style={{
+                      padding: '8px 16px',
+                      background: '#f44336',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Clear All Images
+                  </button>
                 </div>
               </div>
             )}

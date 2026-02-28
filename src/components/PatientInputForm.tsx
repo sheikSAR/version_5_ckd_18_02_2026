@@ -14,17 +14,6 @@ interface PatientData {
   CHO: number;
   TRI: number;
   HB: number;
-  DR_OD: number;
-  DR_SEVERITY_OD: number;
-  DME_OD: number;
-  DR_OS: number;
-  DR_SEVERITY_OS: number;
-  DME_OS: number;
-  EGFR: number;
-  DR_OD_DR_OS: number;
-  CKD_Stage: number;
-  DR_Stage: number;
-  CKD_Label: number;
   DR_Label: number;
 }
 
@@ -46,17 +35,6 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
     CHO: 180,
     TRI: 150,
     HB: 12.0,
-    DR_OD: 0,
-    DR_SEVERITY_OD: 0,
-    DME_OD: 0,
-    DR_OS: 0,
-    DR_SEVERITY_OS: 0,
-    DME_OS: 0,
-    EGFR: 90,
-    DR_OD_DR_OS: 0,
-    CKD_Stage: 1,
-    DR_Stage: 0,
-    CKD_Label: 0,
     DR_Label: 0,
   });
 
@@ -256,88 +234,13 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
           />
         </div>
 
-        {/* 13. DR_OD */}
+        {/* DR Positive */}
         <div className="form-group">
-          <label htmlFor="dr_od">DR_OD</label>
+          <label htmlFor="dr_label">DR Positive</label>
           <select
-            id="dr_od"
-            value={formData.DR_OD}
-            onChange={(e) => handleInputChange('DR_OD', e.target.value)}
-          >
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        {/* 14. DR_SEVERITY_OD */}
-        <div className="form-group">
-          <label htmlFor="dr_severity_od">DR_SEVERITY_OD</label>
-          <select
-            id="dr_severity_od"
-            value={formData.DR_SEVERITY_OD}
-            onChange={(e) =>
-              handleInputChange('DR_SEVERITY_OD', e.target.value)
-            }
-          >
-            <option value="0">None</option>
-            <option value="1">Mild</option>
-            <option value="2">Moderate</option>
-            <option value="3">Severe</option>
-            <option value="4">Proliferative</option>
-          </select>
-        </div>
-
-        {/* 15. DME_OD */}
-        <div className="form-group">
-          <label htmlFor="dme_od">DME_OD</label>
-          <select
-            id="dme_od"
-            value={formData.DME_OD}
-            onChange={(e) => handleInputChange('DME_OD', e.target.value)}
-          >
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        {/* 16. DR_OS */}
-        <div className="form-group">
-          <label htmlFor="dr_os">DR_OS</label>
-          <select
-            id="dr_os"
-            value={formData.DR_OS}
-            onChange={(e) => handleInputChange('DR_OS', e.target.value)}
-          >
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-          </select>
-        </div>
-
-        {/* 17. DR_SEVERITY_OS */}
-        <div className="form-group">
-          <label htmlFor="dr_severity_os">DR_SEVERITY_OS</label>
-          <select
-            id="dr_severity_os"
-            value={formData.DR_SEVERITY_OS}
-            onChange={(e) =>
-              handleInputChange('DR_SEVERITY_OS', e.target.value)
-            }
-          >
-            <option value="0">None</option>
-            <option value="1">Mild</option>
-            <option value="2">Moderate</option>
-            <option value="3">Severe</option>
-            <option value="4">Proliferative</option>
-          </select>
-        </div>
-
-        {/* 18. DME_OS */}
-        <div className="form-group">
-          <label htmlFor="dme_os">DME_OS</label>
-          <select
-            id="dme_os"
-            value={formData.DME_OS}
-            onChange={(e) => handleInputChange('DME_OS', e.target.value)}
+            id="dr_label"
+            value={formData.DR_Label}
+            onChange={(e) => handleInputChange('DR_Label', e.target.value)}
           >
             <option value="0">No</option>
             <option value="1">Yes</option>

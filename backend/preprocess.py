@@ -49,13 +49,17 @@ def encode_clinical_features(df):
     ]
     hba_values = [1, 2, 3, 4]
 
-    egfr_conditions = [df["EGFR"] >= 90, df["EGFR"] < 90]
-    egfr_values = [0, 1]
-
-    df["age"] = np.select(age_conditions, age_values)
-    df["HB"] = np.select(hb_conditions, hb_values)
-    df["HBA"] = np.select(hba_conditions, hba_values)
-    df["EGFR"] = np.select(egfr_conditions, egfr_values)
+    if "age" in df.columns:
+        df["age"] = np.select(age_conditions, age_values)
+    if "HB" in df.columns:
+        df["HB"] = np.select(hb_conditions, hb_values)
+    if "HBA" in df.columns:
+        df["HBA"] = np.select(hba_conditions, hba_values)
+        
+    if "EGFR" in df.columns:
+        egfr_conditions = [df["EGFR"] >= 90, df["EGFR"] < 90]
+        egfr_values = [0, 1]
+        df["EGFR"] = np.select(egfr_conditions, egfr_values)
 
     # Encode gender: M/Male -> 0.0, F/Female/1 -> 1.0
     if "gender" in df.columns:
