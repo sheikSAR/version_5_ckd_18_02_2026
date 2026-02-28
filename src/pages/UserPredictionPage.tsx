@@ -280,7 +280,10 @@ const UserPredictionPage = () => {
             </p>
           </div>
 
-          <PatientInputForm onSubmit={handlePatientDataSubmit} />
+          <PatientInputForm
+            key={patientData ? 'submitted' : 'new'}
+            onSubmit={handlePatientDataSubmit}
+          />
         </section>
 
         {/* Section 2: Image Upload */}
@@ -424,6 +427,7 @@ const UserPredictionPage = () => {
               className="new-analysis-button"
               onClick={() => {
                 setPatientData(null);
+                setIsDataSubmitted(false);
                 setUploadedImages([]);
                 setPredictionResult(null);
                 setError(null);
