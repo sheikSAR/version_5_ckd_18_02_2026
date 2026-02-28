@@ -1,6 +1,6 @@
 .user-prediction-container {
   width: 100%;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f9fafb;
   padding: 20px;
   padding-top: 100px;
   position: relative;
@@ -25,8 +25,8 @@
   border-radius: 12px;
   padding: 40px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   box-sizing: border-box;
   opacity: 1;
   visibility: visible;
@@ -50,19 +50,19 @@
 }
 
 .step-checkmark {
-  font-size: 14px;
-  color: #48bb78;
-  background: #f0fff4;
+  font-size: 13px;
+  color: #059669;
+  background: #d1fae5;
   padding: 4px 12px;
-  border-radius: 20px;
-  border: 1px solid #c6f6d5;
-  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+  font-weight: 600;
   animation: fadeIn 0.5s ease;
 }
 
 .input-section.completed {
-  border-color: #48bb78;
-  box-shadow: 0 4px 20px rgba(72, 187, 120, 0.1);
+  border-color: #a7f3d0;
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.05);
 }
 
 @keyframes fadeIn {
@@ -89,43 +89,33 @@
 }
 
 .image-upload-zone {
-  border: 2px dashed #667eea;
+  border: 2px dashed #d1d5db;
   border-radius: 12px;
   padding: 50px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
+  transition: all 0.2s ease;
+  background: #f9fafb;
   position: relative;
   overflow: hidden;
 }
 
 .image-upload-zone::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  display: none;
 }
 
 .image-upload-zone:hover {
-  border-color: #764ba2;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+  border-color: #9ca3af;
+  background: #f3f4f6;
 }
 
 .image-upload-zone:hover::before {
-  opacity: 1;
+  display: none;
 }
 
 .image-upload-zone.dragging {
-  border-color: #764ba2;
-  transform: scale(1.02);
-  box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+  border-color: #0f172a;
+  background: #f3f4f6;
 }
 
 .upload-content {
@@ -138,8 +128,7 @@
 .upload-icon {
   width: 48px;
   height: 48px;
-  color: #667eea;
-  opacity: 0.8;
+  color: #9ca3af;
 }
 
 .upload-title {
@@ -280,39 +269,39 @@
 }
 
 .analyze-button {
-  padding: 18px 48px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px 40px;
+  background: #0f172a;
   color: white;
-  border: none;
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-  letter-spacing: 0.5px;
   width: 100%;
   max-width: 400px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .analyze-button:hover:not(:disabled) {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+  background: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
 .analyze-button:disabled {
-  background: #edf2f7;
-  color: #a0aec0;
+  background: #e5e7eb;
+  color: #9ca3af;
   box-shadow: none;
   cursor: not-allowed;
 }
 
 .analyze-button.analyzing {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0f172a;
 }
 
 .spinner {
@@ -373,12 +362,10 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(45deg, #667eea 25%, #764ba2 25%, #764ba2 50%, #667eea 50%, #667eea 75%, #764ba2 75%, #764ba2 100%);
-  background-size: 20px 20px;
+  background: #0f172a;
   width: 0%;
   transition: width 0.3s ease;
   border-radius: 4px;
-  animation: progressStripe 1s linear infinite;
 }
 
 @keyframes progressStripe {
@@ -408,28 +395,28 @@
 
 .graph-container {
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 40px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
 }
 
 /* Prediction Summary */
 .prediction-summary {
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 40px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   margin-bottom: 30px;
 }
 
 .prediction-summary h3 {
   margin: 0 0 25px 0;
   font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 700;
+  color: #111827;
 }
 
 .summary-grid {
@@ -440,16 +427,16 @@
 
 .summary-item {
   padding: 20px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.03) 100%);
-  border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .summary-item label {
   display: block;
   margin-bottom: 12px;
   font-weight: 600;
-  color: #333;
+  color: #4b5563;
   font-size: 14px;
 }
 
@@ -465,18 +452,14 @@
 .summary-value .label {
   font-weight: 600;
   font-size: 16px;
-  color: #667eea;
+  color: #111827;
   flex: 1;
 }
 
 .summary-value .probability {
   font-weight: 700;
   font-size: 18px;
-  color: #764ba2;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #059669;
 }
 
 /* Classifier 2 List */
@@ -501,40 +484,40 @@
 
 .classifier2-item .model-name {
   font-weight: 600;
-  color: #667eea;
+  color: #4b5563;
   min-width: 80px;
 }
 
 .classifier2-item .label {
-  color: #666;
+  color: #6b7280;
   flex: 1;
 }
 
 .classifier2-item .probability {
   font-weight: 700;
-  color: #764ba2;
+  color: #059669;
   min-width: 60px;
   text-align: right;
 }
 
 /* New Analysis Button */
 .new-analysis-button {
-  padding: 14px 32px;
+  padding: 12px 24px;
   background: white;
-  border: 2px solid #667eea;
-  color: #667eea;
-  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 15px;
-  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .new-analysis-button:hover {
-  background: #667eea;
-  color: white;
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  background: #f9fafb;
+  color: #111827;
+  border-color: #9ca3af;
 }
 
 /* Responsive */

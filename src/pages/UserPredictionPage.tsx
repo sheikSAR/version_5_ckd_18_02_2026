@@ -261,7 +261,7 @@ const UserPredictionPage = () => {
 
   return (
     <div className="user-prediction-container">
-      <UserNavbar title="Single Patient CKD Prediction" />
+      <UserNavbar title="Single Patient CKD Prediction" showBackButton={true} />
 
       <div className="prediction-content">
         {/* Section 1: Patient Input */}
@@ -291,7 +291,7 @@ const UserPredictionPage = () => {
           <div className="section-header">
             <h2>2. Eye Images</h2>
             <p className="section-description">
-              Upload up to 4 eye images for additional analysis
+              Upload up to 4 eye images
             </p>
           </div>
 

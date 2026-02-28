@@ -4,9 +4,15 @@ import '../styles/UserNavbar.css'
 
 interface UserNavbarProps {
   title?: string
+  showBackButton?: boolean
+  onBack?: () => void
 }
 
-const UserNavbar: React.FC<UserNavbarProps> = ({ title = 'Patient Prediction' }) => {
+const UserNavbar: React.FC<UserNavbarProps> = ({
+  title = 'Patient Prediction',
+  showBackButton = false,
+  onBack
+}) => {
   const [isScrolled, setIsScrolled] = useState(false)
   const navigate = useNavigate()
 
@@ -27,6 +33,19 @@ const UserNavbar: React.FC<UserNavbarProps> = ({ title = 'Patient Prediction' })
   return (
     <nav className={`user-navbar ${isScrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
+        {showBackButton && (
+          <button
+            className="navbar-back-button"
+            onClick={onBack || (() => navigate('/user'))}
+            title="Go Back"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            <span>Back</span>
+          </button>
+        )}
         <div className="navbar-logos">
           <div className="logo-wrapper">
             <img
