@@ -1,6 +1,6 @@
 clc; clear; close all;
-filename = "Clinical_data_EGFR_Prediction_161225.xlsx";
-%filename = "EFSD_27022026.xlsx";
+%filename = "Clinical_data_EGFR_Prediction_161225.xlsx";
+filename = "EFSD_27022026.xlsx";
 % Create the table with missing data
 T1 = readtable(filename);
 % Replace OHA, HT, and Insulin NANs with 0
@@ -9,7 +9,9 @@ T1.OHA(find(isnan(T1.OHA))) = 0;
 T1.INSULIN(isnan(T1.INSULIN)) = 0;
 %X1 = table2array(T1(:,1:end));
 T1 = removevars(T1, ...
-    {'DR_OD','DR_OS','DME_OS','DME_OD','DR_SEVERITY_OD','DR_SEVERITY_OS'});
+    {'RETINALDATE', 'DR_OD', 'DR_OS', 'DME_OS', 'DME_OD', ...
+     'DR_SEVERITY_OD', 'DR_SEVERITY_OS', 'DR_Stage'});
+
 y1 = T1.EGFR;
 % NANs
 rowsWithNaN = any(ismissing(T1),2);
@@ -42,7 +44,7 @@ statsTableActual = statisticalanalysis(T1);
 %[Tclean, report] = processOutliersFromStats(Tcleaned, statsTableTcleaned, "winsorize");
 generateDatapipelineReport(T1,Tcleaned,statsTableTcleaned);
 % MCMC analysis for adding data
-results = CKD_fullAugmentationPipeline(Tcleaned,"bootstrap",2000);
+results = CKD_fullAugmentationPipeline(Tcleaned,"bootstrap",8000);
 Taugmented = results.augmentedData
 % Check the augmentation
 approval = CKD_augmentationApprovalReport(results.validation,results.correlationError,true);
@@ -69,3 +71,6 @@ results = trainCKDModelsExhaustive(X,y);
 plotCKDModelPerformance(results.metrics);
 explainCKDModels(results.metrics);
 %[results, finalModel] = CKDModelPipelineAutoEval(X, y, 'CKD_finalModel.mat');
+
+% Export trained models for Backend integration
+exportModelsToJson(results, 'CKD_Exported_Models.json');

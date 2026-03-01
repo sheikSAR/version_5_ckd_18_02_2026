@@ -15,6 +15,7 @@ interface PatientData {
   TRI: number;
   HB: number;
   DR_Label: number;
+  DR_OD_DR_OS?: number;
 }
 
 interface PatientInputFormProps {
@@ -81,7 +82,12 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
     e.preventDefault();
 
     if (validateForm()) {
-      onSubmit(formData as PatientData);
+      const finalData = { ...formData } as PatientData;
+      // The backend needs DR_OD_DR_OS for legacy mappings, but the user only inputs DR_Label. 
+      // User expects these to be identical for UI simplicity.
+      finalData.DR_OD_DR_OS = finalData.DR_Label;
+
+      onSubmit(finalData);
       setIsSubmitted(true);
     }
   };

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import PatientInputForm from '../components/PatientInputForm';
 import UserGraphRenderer from '../components/UserGraphRenderer';
-import UserNavbar from '../components/UserNavbar';
 import { useUserSession } from '../context/UserSessionContext';
 import '../styles/UserPredictionPage.css';
 
@@ -21,6 +20,7 @@ interface PatientData {
   TRI: number;
   HB: number;
   DR_Label: number;
+  DR_OD_DR_OS?: number;
 }
 
 interface PredictionResult {
@@ -30,7 +30,6 @@ interface PredictionResult {
     label: string;
     probability: number;
   };
-  Classifier2: Record<string, { label: string; probability: number }>;
 }
 
 const UserPredictionPage = () => {
@@ -113,6 +112,7 @@ const UserPredictionPage = () => {
         CHO: patientData.CHO,
         TRI: patientData.TRI,
         DR_Label: patientData.DR_Label,
+        DR_OD_DR_OS: patientData.DR_OD_DR_OS,
       };
 
       const sessionResponse = await axios.post(
@@ -261,8 +261,6 @@ const UserPredictionPage = () => {
 
   return (
     <div className="user-prediction-container">
-      <UserNavbar title="Single Patient CKD Prediction" showBackButton={true} />
-
       <div className="prediction-content">
         {/* Section 1: Patient Input */}
         <section
@@ -281,7 +279,6 @@ const UserPredictionPage = () => {
           </div>
 
           <PatientInputForm
-            key={patientData ? 'submitted' : 'new'}
             onSubmit={handlePatientDataSubmit}
           />
         </section>
@@ -382,7 +379,6 @@ const UserPredictionPage = () => {
                 patientId={predictionResult.Patient_ID}
                 predictions={predictionResult.Predictions}
                 classifier1={predictionResult.Classifier1}
-                classifier2Outputs={predictionResult.Classifier2}
               />
             </div>
 
@@ -401,23 +397,6 @@ const UserPredictionPage = () => {
                       )}
                       %
                     </span>
-                  </div>
-                </div>
-
-                <div className="summary-item">
-                  <label>Classifier 2 Predictions (per regressor)</label>
-                  <div className="classifier2-list">
-                    {Object.entries(predictionResult.Classifier2).map(
-                      ([modelName, result]) => (
-                        <div key={modelName} className="classifier2-item">
-                          <span className="model-name">{modelName}</span>
-                          <span className="label">{result.label}</span>
-                          <span className="probability">
-                            {result.probability.toFixed(1)}%
-                          </span>
-                        </div>
-                      )
-                    )}
                   </div>
                 </div>
               </div>

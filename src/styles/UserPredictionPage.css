@@ -1,11 +1,8 @@
 .user-prediction-container {
   width: 100%;
-  background: #f9fafb;
-  padding: 20px;
-  padding-top: 100px;
+  background: transparent;
   position: relative;
   z-index: 10;
-  min-height: 100vh;
 }
 
 .prediction-content {

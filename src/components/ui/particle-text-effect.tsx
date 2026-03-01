@@ -193,11 +193,15 @@ export function ParticleTextEffect({
     offscreenCanvas.height = canvas.height
     const offscreenCtx = offscreenCanvas.getContext("2d")!
 
+    // Now that the parent container is fixed to 100vw and zIndex: 5 (covering the whole screen), 
+    // we want drawing "center" to exactly mean the center of the viewport.
     offscreenCtx.fillStyle = "white"
     offscreenCtx.font = "bold 100px Arial"
     offscreenCtx.textAlign = "center"
     offscreenCtx.textBaseline = "middle"
-    offscreenCtx.fillText(word, canvas.width / 2, canvas.height / 2)
+
+    const centerX = position === 'center' ? canvas.width / 2 : (position === 'left' ? canvas.width * 0.25 : canvas.width * 0.75);
+    offscreenCtx.fillText(word, centerX, canvas.height / 2)
 
     const imageData = offscreenCtx.getImageData(0, 0, canvas.width, canvas.height)
     const pixels = imageData.data
@@ -317,7 +321,8 @@ export function ParticleTextEffect({
     if (!canvas) return
 
     const resizeCanvas = () => {
-      canvas.width = position === 'center' ? window.innerWidth : window.innerWidth / 2
+      // Force it to span the entire screen, regardless of position property
+      canvas.width = window.innerWidth
       canvas.height = window.innerHeight
       nextWord(words[0], canvas)
     }
@@ -372,14 +377,12 @@ export function ParticleTextEffect({
 
   const canvasStyle = {
     display: "block",
-    width: position === 'center' ? "100vw" : "50vw",
+    width: "100vw",
     height: "100vh",
-    ...(position === 'center' && { position: 'fixed' as const, top: 0, left: 0 }),
-    ...(position === 'left' && { position: 'absolute' as const, top: 0, left: 0 }),
-    ...(position === 'right' && { position: 'absolute' as const, top: 0, right: 0 }),
+    position: 'fixed' as const, top: 0, left: 0
   }
 
-  const canvasClass = position === 'center' ? "fixed top-0 left-0 w-full h-full -z-10" : "absolute top-0 -z-10"
+  const canvasClass = "fixed top-0 left-0 w-full h-full -z-10"
 
   return (
     <canvas

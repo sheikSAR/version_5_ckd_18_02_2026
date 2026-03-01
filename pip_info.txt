@@ -1,0 +1,32 @@
+Name: scikit-learn
+Version: 1.2.2
+Summary: A set of python modules for machine learning and data mining
+Home-page: http://scikit-learn.org
+Author: 
+Author-email: 
+License: new BSD
+Location: C:\Users\sheik\AppData\Local\Programs\Python\Python311\Lib\site-packages
+Requires: joblib, numpy, scipy, threadpoolctl
+Required-by: skl2onnx
+---
+Name: xgboost
+Version: 3.2.0
+Summary: XGBoost Python Package
+Home-page: 
+Author: 
+Author-email: Hyunsu Cho <chohyu01@cs.washington.edu>, Jiaming Yuan <jm.yuan@outlook.com>
+License: Apache-2.0
+Location: C:\Users\sheik\AppData\Local\Programs\Python\Python311\Lib\site-packages
+Requires: numpy, scipy
+Required-by: 
+---
+Name: numpy
+Version: 1.24.3
+Summary: Fundamental package for array computing in Python
+Home-page: https://www.numpy.org
+Author: Travis E. Oliphant et al.
+Author-email: 
+License: BSD-3-Clause
+Location: C:\Users\sheik\AppData\Local\Programs\Python\Python311\Lib\site-packages
+Requires: 
+Required-by: altair, biopython, caer, contourpy, cvzone, easyocr, face-recognition, h5py, imageio, langchain-community, matplotlib, mediapipe, moviepy, onnx, onnxconverter-common, onnxruntime, open3d, opencv-contrib-python, opencv-python, opt-einsum, pandas, pyarrow, pydeck, scikit-image, scikit-learn, scipy, shapely, streamlit, tensorboard, tensorboardX, tensorflow-intel, tifffile, torchvision, wxPython, xgboost

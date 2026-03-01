@@ -1,43 +1,55 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useState } from 'react';
 import UserNavbar from '../components/UserNavbar';
+import UserPredictionPage from './UserPredictionPage';
+import { MicroscopeIcon, DashboardSquare01Icon } from 'hugeicons-react';
 import '../styles/SimplePage.css';
 
 const UserPage = () => {
-  const navigate = useNavigate();
-  const [error, setError] = React.useState<string | null>(null);
+  // 'overview' or 'prediction'
+  const [activeTab, setActiveTab] = useState<'overview' | 'prediction'>('overview');
 
   return (
-    <div className="page-container">
+    <div className="page-container dashboard-layout">
       <UserNavbar title="User Dashboard" />
 
-      <div className="dashboard-content">
-        <div className="welcome-section">
-          <p className="welcome-text">Welcome to the CKD Prediction System</p>
-          <p className="welcome-subtitle">
-            Analyze single patient records for CKD prediction
-          </p>
-        </div>
-
-        <div className="actions-grid">
-          <div className="action-card">
-            <div className="action-icon">🔬</div>
-            <h2 className="action-title">Single Patient Prediction</h2>
-            <p className="action-description">
-              Analyze a single patient's clinical data with eye images
-              to predict CKD status
-            </p>
+      <div className="dashboard-body">
+        {/* Sidebar */}
+        <aside className="dashboard-sidebar">
+          <nav className="sidebar-nav">
             <button
-              className="action-button"
-              onClick={() => navigate('/user/predict')}
+              className={`sidebar-item ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
             >
-              Start Analysis
+              <DashboardSquare01Icon className="sidebar-icon" />
+              <span>Overview</span>
             </button>
-          </div>
-        </div>
+            <button
+              className={`sidebar-item ${activeTab === 'prediction' ? 'active' : ''}`}
+              onClick={() => setActiveTab('prediction')}
+            >
+              <MicroscopeIcon className="sidebar-icon" />
+              <span>Single Patient Prediction</span>
+            </button>
+          </nav>
+        </aside>
 
-        {error && <div className="error-message">{error}</div>}
+        {/* Main Content Area */}
+        <main className="dashboard-main-content">
+          {activeTab === 'overview' ? (
+            <div className="overview-content">
+              <div className="welcome-section">
+                <p className="welcome-text">Welcome to the CKD Prediction System</p>
+                <p className="welcome-subtitle">
+                  Select a tool from the sidebar to begin analyzing patient records.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="prediction-view">
+              <UserPredictionPage />
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

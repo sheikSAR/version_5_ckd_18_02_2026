@@ -5,27 +5,10 @@
     "id_column": "ID",
     "target_column": "EGFR"
   },
-  "sklearn_models": {
-    "LASSO_PKL": "backend/models/EGFR_Lasso_model.pkl",
-    "RIDGE_PKL": "backend/models/EGFR_Ridge_model.pkl",
-    "ELASTICNET_PKL": "backend/models/EGFR_ElasticNet_model.pkl"
-  },
-  "matlab_models": {
-    "EGFR_FilterModel": "backend/Matlabjson/EGFR_fitlm_Coefficients.json",
-    "YALMIP_Model": "backend/Matlabjson/EGFR_YALMIP_OptimizationResults.json",
-    "LASSO_JSON": "backend/Matlabjson/LassoModelTestResults29.json",
-    "ElasticNet_JSON": "backend/Matlabjson/EnetmodeltraintestResults.json",
-    "Ridge_JSON": "backend/Matlabjson/ridgemodeltraintestResults29.json"
-  },
   "classifier_1": {
     "Clinical_Cols": "backend/models/Classifier1/CKD_Clinical_Cols.pkl",
     "Model": "backend/models/Classifier1/CKD_ResNet_XGB_Model.pkl",
     "Scaler": "backend/models/Classifier1/CKD_Scaler.pkl"
-  },
-  "classifier_2": {
-    "Clinical_Cols": "backend/models/Classifier2/3112CKD_Clinical_Cols.pkl",
-    "Model": "backend/models/Classifier2/3112CKD_ResNet_XGB_Model.pkl",
-    "Scaler": "backend/models/Classifier2/31125CKD_Scaler.pkl"
   },
   "output": {
     "json": "backend/outputs/EGFR_AllPatients_Predictions.json",

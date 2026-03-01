@@ -8,19 +8,7 @@ from backend.preprocess import encode_clinical_features
 
 print(">>> LOADED PREDICTION.PY WITH ZERO-PADDING FIX <<<")
 
-SKLEARN_NAME_MAP = {
-    "LASSO_PKL": "LASSO_1",
-    "RIDGE_PKL": "RIDGE_1",
-    "ELASTICNET_PKL": "ELASTICNET_1",
-}
 
-MATLAB_NAME_MAP = {
-    "EGFR_FilterModel": "EGFR_Filter",
-    "YALMIP_Model": "YALMIP",
-    "LASSO_JSON": "LASSO_2",
-    "ElasticNet_JSON": "ELASTICNET_2",
-    "Ridge_JSON": "RIDGE_2",
-}
 
 # Classifier 1 configuration
 CLASSIFIER_1_CLINICAL_FEATURES = [
@@ -28,22 +16,11 @@ CLASSIFIER_1_CLINICAL_FEATURES = [
     "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_Label"
 ]
 
-# Classifier 2 configuration
-CLASSIFIER_2_CLINICAL_FEATURES = [
-    "age", "gender", "Durationofdiabetes", "BMI", "Hypertension",
-    "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_Label",
-    "Predicted_EGFR"
-]
+JSON_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models.json"
 
-CLASSIFIER_2_EGFR_COLUMNS = [
-    "LASSO_1",
-    "RIDGE_1",
-    "ELASTICNET_1",
-    "LASSO_2",
-    "ELASTICNET_2",
-    "RIDGE_2",
-    "EGFR_Filter",
-    "YALMIP"
+# Models we expect to load and run from the JSON
+REGRESSION_MODELS = [
+    "Tree"
 ]
 
 # Global ResNet model for classifiers
@@ -55,33 +32,79 @@ def load_config(path):
         return json.load(f)
 
 
-def predict_simple(model, patient, id_col, egfr_col):
-    if "Coefficients" in model and isinstance(model["Coefficients"], dict):
-        betas = model["Coefficients"]
-        intercept = model.get("Intercept", 0.0)
+def predict_json_model(model_name, model_data, patient_features):
+    """
+    Predicts using the exported JSON weights.
+    Order of features expected by the MATLAB models:
+    ["age", "gender", "Durationofdiabetes", "BMI", "Hypertension", "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_DR_OS"]
+    """
+    matlab_feature_order = [
+         "age", "gender", "Durationofdiabetes", "BMI", "Hypertension", 
+         "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_DR_OS"
+    ]
+    
+    # Extract X vector in exact order
+    X_vals = []
+    for f in matlab_feature_order:
+        val = patient_features.get(f, 0.0)
+        if f == "gender":
+            if str(val).upper() == "F":
+                val = 1.0
+            elif str(val).upper() == "M":
+                val = 0.0
+            else:
+                val = 0.0
+        X_vals.append(float(val))
+        
+    X = np.array(X_vals)
+    
+    y_pred = 0.0
+    
+    if model_name == "Tree":
+        # model_data contains: CutPredictor, CutPoint, Children, NodeMean, IsBranchNode
+        # All arrays are aligned node-wise. Matlab indices are 1-based, we'll convert to 0-based
+        current_node = 0 # root
+        
+        cut_predictors = model_data.get("CutPredictor", [])
+        cut_points = model_data.get("CutPoint", [])
+        children = model_data.get("Children", [])
+        node_means = model_data.get("NodeMean", [])
+        is_branch = model_data.get("IsBranchNode", [])
+        
+        while current_node < len(is_branch) and is_branch[current_node]:
+            # MATLAB predictor name like 'x1', 'x12', or potentially feature name
+            cut_pred_name = cut_predictors[current_node]
+            
+            # Usually Matlab export strings are like 'x1', 'x2' etc. depending on feature count
+            # In Matlab format for our data, it might be the actual column name or 'x{col}'
+            # Our array X is ordered by matlab_feature_order [0..11]
+            if isinstance(cut_pred_name, str) and cut_pred_name.startswith('x'):
+                try:
+                    feat_idx = int(cut_pred_name[1:]) - 1
+                except:
+                    feat_idx = 0
+            elif isinstance(cut_pred_name, str) and cut_pred_name in matlab_feature_order:
+                feat_idx = matlab_feature_order.index(cut_pred_name)
+            else:
+                feat_idx = 0
+                
+            cut_val = cut_points[current_node]
+            patient_val = X[feat_idx]
+            
+            # Check left vs right node navigation
+            if patient_val < cut_val:
+                # MATLAB is 1-indexed, we subtract 1
+                current_node = int(children[current_node][0]) - 1
+            else:
+                current_node = int(children[current_node][1]) - 1
+                
+        # We are at a leaf node
+        if current_node < len(node_means):
+            y_pred = float(node_means[current_node])
+        else:
+            y_pred = 0.0
 
-    elif "Coefficients" in model and "VariableNames" in model:
-        betas = dict(zip(model["VariableNames"], model["Coefficients"]))
-        intercept = model.get("Intercept", 0.0)
-
-    elif "Estimate" in model and "CoefficientNames" in model:
-        betas = dict(zip(model["CoefficientNames"], model["Estimate"]))
-        intercept = betas.pop("Intercept", 0.0)
-
-    elif "x" in model:
-        features = [c for c in patient.index if c not in [id_col, egfr_col]]
-        intercept = model["x"][0]
-        betas = dict(zip(features, model["x"][1:]))
-
-    else:
-        raise ValueError("Unsupported simple MATLAB model")
-
-    y = intercept
-    for f, b in betas.items():
-        if f in patient:
-            y += float(patient[f]) * float(b)
-
-    return round(float(y), 2)
+    return round(float(y_pred), 2)
 
 
 def get_cnn_model():
@@ -208,98 +231,10 @@ def run_classifier_1(patient, clinical_columns, model, scaler, image_paths=None)
         return {"Prediction": "Error", "Probability": 0.0, "Error": str(e)}
 
 
-def run_classifier_2(patient, egfr_predictions, clinical_columns, model, scaler, image_paths=None):
-    """Run Classifier 2 (CKD prediction with multiple EGFR models + image features)"""
-    try:
-        results = {}
 
-        # Extract image features once
-        img_feat = None
-        if image_paths:
-            img_feat = extract_image_features(image_paths)
-
-        # For each EGFR model, create a variant with that EGFR prediction
-        for egfr_col in CLASSIFIER_2_EGFR_COLUMNS:
-            if egfr_col not in egfr_predictions:
-                continue
-
-            # Build feature vector with this specific EGFR prediction
-            feature_values = [float(patient.get(f, 0.0)) for f in clinical_columns]
-            # Replace "Predicted_EGFR" position if it exists
-            if "Predicted_EGFR" in clinical_columns:
-                egfr_idx = clinical_columns.index("Predicted_EGFR")
-                feature_values[egfr_idx] = float(egfr_predictions[egfr_col])
-
-            X = np.array(feature_values).reshape(1, -1)
-            X_scaled = scaler.transform(X)
-
-            if img_feat is not None:
-                X_final = np.hstack([X_scaled, img_feat.reshape(1, -1)])
-            else:
-                # No valid images, use zero padding
-                zero_img_feat = np.zeros((1, 2048))
-                X_final = np.hstack([X_scaled, zero_img_feat])
-
-            try:
-                y_pred = model.predict(X_final)[0]
-                y_prob = model.predict_proba(X_final)[0][1]
-
-                results[egfr_col] = {
-                    "Prediction": "CKD" if int(y_pred) == 1 else "Non-CKD",
-                    "Probability": round(float(y_prob) * 100, 2)
-                }
-            except Exception as e:
-                results[egfr_col] = {"Prediction": "Error", "Probability": 0.0}
-
-        return results if results else {"Error": "No EGFR predictions available"}
-
-    except Exception as e:
-        import traceback
-        with open("debug_errors.txt", "a") as f:
-            f.write(f"Classifier 2 Error: {str(e)}\n")
-            f.write(traceback.format_exc() + "\n")
-        print(f"Classifier 2 error: {str(e)}")
-        return {"Error": str(e)}
-
-
-def predict_standardized(model, patient):
-    model["continuousVars"] = model.get(
-        "continuousVars", model.get("continuousvars", [])
-    )
-    model["binaryVars"] = model.get("binaryVars", model.get("binaryvars", []))
-    model["ordinalVars"] = model.get("ordinalVars", model.get("ordinalvars", []))
-
-    beta = model.get("betaenet") or model.get("betalasso") or model.get("betaridge")
-    beta = np.array(beta, dtype=float)
-
-    intercept = (
-        model.get("intercept")
-        or model.get("Intercept")
-        or model.get("Interceptlasso")
-        or model.get("interceptridge")
-        or 0.0
-    )
-
-    mu = np.array(model["mu_cont"], dtype=float)
-    sigma = np.array(model["sigma_cont"], dtype=float)
-
-    # Safely extract feature values with default 0.0 for missing keys
-    Xc = np.array([float(patient.get(v, 0.0)) for v in model["continuousVars"]], dtype=float)
-    Xc = (Xc - mu) / sigma
-
-    Xb = np.array([float(patient.get(v, 0.0)) for v in model["binaryVars"]], dtype=float)
-    Xo = np.array([float(patient.get(v, 0.0)) for v in model["ordinalVars"]], dtype=float)
-
-    X = np.concatenate([Xc, Xb, Xo])
-
-    if len(beta) == len(X) + 1:
-        beta = beta[1:]
-
-    return round(float(np.dot(X, beta) + intercept), 2)
 
 
 def run(config_path: str) -> List[Dict[str, Any]]:
-    global CLASSIFIER_2_CLINICAL_FEATURES
     cfg = load_config(config_path)
 
     data_cfg = cfg["data"]
@@ -307,10 +242,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     id_col = data_cfg["id_column"]
     egfr_col = data_cfg["target_column"]
 
-    sklearn_models_cfg = cfg.get("sklearn_models", {})
-    matlab_models_cfg = cfg.get("matlab_models", {})
     classifier_1_cfg = cfg.get("classifier_1", {})
-    classifier_2_cfg = cfg.get("classifier_2", {})
     images_dir = cfg.get("images_dir")
 
     output_cfg = cfg["output"]
@@ -322,26 +254,21 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     has_actual = egfr_col in df.columns
 
     FULL_CLINICAL_COLUMNS = [
-        "ID", "NAME", "age", "gender", "Hypertension", "HBA", "HB", 
-        "DR_OD", "DR_SEVERITY_OD", "DME_OD", "DR_OS", "DR_SEVERITY_OS", "DME_OS", 
+        "age", "gender", "Hypertension", "HBA", "HB", 
         "BMI", "Durationofdiabetes", "OHA", "INSULIN", "CHO", "TRI", "DR_Label", 
-        "EGFR", "DR_OD_DR_OS", "CKD_Stage", "DR_Stage", "CKD_Label"
+        "DR_OD_DR_OS", "EGFR"
     ]
     
     for c in FULL_CLINICAL_COLUMNS:
         if c not in df.columns:
             df[c] = 0.0
 
-    # Ensure any image passing logic columns are appended securely after
-    extra_cols = [c for c in df.columns if c not in FULL_CLINICAL_COLUMNS]
-    df = df[FULL_CLINICAL_COLUMNS + extra_cols]
+    df_original = df.copy()
 
     # Load classifier models if configured
     classifier_1_model = None
     classifier_1_scaler = None
     classifier_1_clinical_cols = None
-    classifier_2_model = None
-    classifier_2_scaler = None
 
     if classifier_1_cfg:
         try:
@@ -353,99 +280,15 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             print(f"Warning: Could not load Classifier 1: {str(e)}")
             classifier_1_model = None
 
-    if classifier_2_cfg:
-        try:
-            print("Loading Classifier 2...")
-            # Classifier 2 needs a CKD model, scaler and clinical columns
-            if "Model" in classifier_2_cfg and "Scaler" in classifier_2_cfg:
-                classifier_2_model = joblib.load(classifier_2_cfg.get("Model"))
-                classifier_2_scaler = joblib.load(classifier_2_cfg.get("Scaler"))
-                
-                # Load clinical columns if available
-                if "Clinical_Cols" in classifier_2_cfg:
-                     classifier_2_clinical_cols = joblib.load(classifier_2_cfg.get("Clinical_Cols"))
-                     # Use loaded columns instead of global hardcoded list
-                     CLASSIFIER_2_CLINICAL_FEATURES = list(classifier_2_clinical_cols)
-                     print(f"Loaded Classifier 2 columns: {CLASSIFIER_2_CLINICAL_FEATURES}")
-            else:
-                print("Warning: Classifier 2 config missing Model or Scaler path")
-                classifier_2_model = None
-        except Exception as e:
-            print(f"Warning: Could not load Classifier 2: {str(e)}")
-            classifier_2_model = None
-
-    print("Loading sklearn models...")
-    sklearn_models = {
-        name: joblib.load(path) for name, path in sklearn_models_cfg.items()
-    }
-
-    # Define required columns for sklearn models
-    # These are the columns the models were trained with
-    SKLEARN_REQUIRED_COLUMNS = [
-        "age",
-        "gender",
-        "Durationofdiabetes",
-        "BMI",
-        "Hypertension",
-        "OHA",
-        "INSULIN",
-        "HBA",
-        "CHO",
-        "TRI",
-        "HB",
-        "DR_OD",
-        "DR_SEVERITY_OD",
-        "DME_OD",
-        "DR_OS",
-        "DR_SEVERITY_OS",
-        "DME_OS",
-        "DR_OD_DR_OS",
-        "CKD_Stage",
-        "DR_Stage",
-    ]
-
-    # Ensure all required columns exist in the original dataframe
-    # This is needed for sklearn and MATLAB models that expect these columns
-    for col in SKLEARN_REQUIRED_COLUMNS:
-        if col not in df.columns:
-            df[col] = 0.0
-
-    # Ensure all values are numeric (convert any remaining strings to float)
-    for col in SKLEARN_REQUIRED_COLUMNS:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0.0)
-
-    # IMPORTANT: Keep the original unencoded dataframe for sklearn/MATLAB models
-    # These models were trained on continuous/original values, NOT encoded categorical values
-    df_original = df.copy()
-
-    # Drop ID and EGFR columns for regressors
-    X_all = df_original.drop(columns=[id_col, egfr_col], errors="ignore")
-
-    # Select only the required columns in the correct order
-    X_all = X_all[SKLEARN_REQUIRED_COLUMNS]
-
-    # NOW encode the dataframe for classifiers and relationship graphs
     print("Encoding clinical features for classifiers...")
     df = encode_clinical_features(df)
 
-    print("Loading MATLAB models...")
-    matlab_models = {
-        name: json.load(open(path, "r", encoding="utf-8"))
-        for name, path in matlab_models_cfg.items()
-    }
-
-    # Pre-batch sklearn predictions for efficiency
-    sklearn_predictions = {}
-    for sklearn_name, sklearn_model in sklearn_models.items():
-        out_name = SKLEARN_NAME_MAP[sklearn_name]
-        try:
-            # Predict for all patients at once, then round
-            all_preds = sklearn_model.predict(X_all)
-            sklearn_predictions[out_name] = np.round(all_preds, 2)
-        except Exception as e:
-            print(f"Warning: sklearn model {sklearn_name} failed: {e}")
-            sklearn_predictions[out_name] = [None] * len(X_all)
+    print("Loading Exported MATLAB JSON Models...")
+    try:
+        exported_matlab_models = load_config(JSON_MODEL_FILE)
+    except Exception as e:
+        print(f"Warning: Could not load {JSON_MODEL_FILE}: {e}")
+        exported_matlab_models = {}
 
     # Discover images from images directory
     discovered_images = discover_images(images_dir)
@@ -465,32 +308,19 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         predictions_dict = {}
         errors_dict = {}
 
-        # Get pre-computed sklearn predictions
-        for sklearn_name in sklearn_models.keys():
-            out_name = SKLEARN_NAME_MAP[sklearn_name]
-            try:
-                pred_val = sklearn_predictions[out_name][idx]
-                if pred_val is not None:
-                    pred = float(pred_val)
-                    predictions_dict[out_name] = pred
-                    if has_actual:
-                        errors_dict[out_name] = round(pred - actual, 2)
-            except Exception as e:
-                print(f"Warning: {sklearn_name} prediction failed for patient {pid}: {e}")
-
-        # Process MATLAB models using original unencoded data
-        for name, model in matlab_models.items():
-            out_name = MATLAB_NAME_MAP[name]
-            try:
-                if name in ["EGFR_FilterModel", "YALMIP_Model"]:
-                    pred = predict_simple(model, patient_original, id_col, egfr_col)
-                else:
-                    pred = predict_standardized(model, patient_original)
-                predictions_dict[out_name] = pred
-                if has_actual:
-                    errors_dict[out_name] = round(pred - actual, 2)
-            except Exception as e:
-                print(f"Warning: {name} prediction failed for patient {pid}: {e}")
+        # Process the newly exported regression models over raw features
+        if exported_matlab_models:
+            for model_name in REGRESSION_MODELS:
+                if model_name in exported_matlab_models:
+                    try:
+                        pred = predict_json_model(model_name, exported_matlab_models[model_name], patient_original)
+                        predictions_dict[model_name] = pred
+                        if has_actual:
+                            errors_dict[model_name] = round(pred - actual, 2)
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        print(f"Warning: JSON Model {model_name} failed: {e}")
 
         # Run Classifier 1 using original unencoded data
         classifier_1_result = None
@@ -507,31 +337,9 @@ def run(config_path: str) -> List[Dict[str, Any]]:
 
             classifier_1_result = run_classifier_1(
                 patient_original,
-                list(classifier_1_clinical_cols), # Must use the joblib loaded column list specifically for the scaler
+                list(classifier_1_clinical_cols), 
                 classifier_1_model,
                 classifier_1_scaler,
-                image_paths if image_paths else None
-            )
-
-        # Run Classifier 2 using original unencoded data
-        classifier_2_result = None
-        if classifier_2_model and classifier_2_scaler:
-            # Get image paths: first check original patient data, then use discovered images
-            image_paths = []
-            if "image_path" in patient_original and patient_original["image_path"]:
-                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
-            elif "image_paths" in patient_original and patient_original["image_paths"]:
-                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
-            elif discovered_images:
-                # Use discovered images if no patient-specific images provided
-                image_paths = discovered_images
-
-            classifier_2_result = run_classifier_2(
-                patient_original,
-                predictions_dict,
-                CLASSIFIER_2_CLINICAL_FEATURES,
-                classifier_2_model,
-                classifier_2_scaler,
                 image_paths if image_paths else None
             )
 
@@ -546,7 +354,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             "Predictions": predictions_dict,
             "Errors": errors_dict,
             "Classifier1": classifier_1_result,
-            "Classifier2": classifier_2_result,
+            "Classifier2": {},
             "Images_Used": images_used,
         }
 
@@ -585,17 +393,8 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         else:
             converted_entry["Classifier1"] = {"label": "Not Available", "probability": 0.0}
 
-        # Add Classifier 2 results
-        if entry["Classifier2"]:
-            converted_entry["Classifier2"] = {}
-            for key, val in entry["Classifier2"].items():
-                if isinstance(val, dict):
-                    converted_entry["Classifier2"][key] = {
-                        "label": val.get("Prediction", "Error"),
-                        "probability": float(val.get("Probability", 0.0))
-                    }
-        else:
-            converted_entry["Classifier2"] = {}
+        # Clear out Classifier 2 results completely
+        converted_entry["Classifier2"] = {}
 
         # Add images information
         if entry.get("Images_Used"):

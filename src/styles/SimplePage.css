@@ -7,10 +7,102 @@
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   z-index: 10;
-  padding: 100px 20px 40px 20px;
   flex-direction: column;
-  gap: 20px;
   background: #f9fafb;
+}
+
+.dashboard-layout {
+  padding-top: 80px;
+  /* Account for navbar */
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboard-body {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 80px);
+  /* Fill remaining height */
+  overflow: hidden;
+}
+
+.dashboard-sidebar {
+  width: 280px;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  padding: 24px 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.sidebar-item:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.sidebar-item.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.sidebar-item.active .sidebar-icon {
+  color: #1d4ed8;
+}
+
+.sidebar-icon {
+  width: 20px;
+  height: 20px;
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.sidebar-item:hover .sidebar-icon {
+  color: #4b5563;
+}
+
+.dashboard-main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  background: #f9fafb;
+}
+
+.overview-content {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.prediction-view {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .dashboard-content {
@@ -108,25 +200,40 @@
 .error-message {
   margin-top: 20px;
   padding: 15px 20px;
-  background: #fed7d7;
-  color: #c53030;
+  background: #fef2f2;
+  color: #b91c1c;
   border-radius: 8px;
-  border-left: 4px solid #c53030;
+  border-left: 4px solid #ef4444;
   font-size: 14px;
   text-align: center;
 }
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
-  .page-container {
-    padding: 15px;
-    min-height: auto;
-    padding-top: 60px;
+  .dashboard-body {
+    flex-direction: column;
   }
 
-  .page-heading {
-    font-size: 28px;
-    line-height: 1.4;
+  .dashboard-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .sidebar-item {
+    white-space: nowrap;
+    width: auto;
+  }
+
+  .dashboard-main-content {
+    padding: 20px 16px;
   }
 }
 

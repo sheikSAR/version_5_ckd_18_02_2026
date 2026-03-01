@@ -185,8 +185,7 @@ def trigger_prediction():
                 "id_column": "ID",
                 "target_column": "EGFR",
             },
-            "sklearn_models": base_config.get("sklearn_models", {}),
-            "matlab_models": base_config.get("matlab_models", {}),
+            "classifier_1": base_config.get("classifier_1", {}),
             "output": {
                 "json": os.path.join(output_dir, "regressor_predictions.json"),
                 "print_progress": True,
@@ -500,10 +499,7 @@ def trigger_user_prediction(user_id, session_id):
                 "id_column": "ID",
                 "target_column": "EGFR",
             },
-            "sklearn_models": base_config.get("sklearn_models", {}),
-            "matlab_models": base_config.get("matlab_models", {}),
             "classifier_1": base_config.get("classifier_1", {}),
-            "classifier_2": base_config.get("classifier_2", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),
@@ -609,10 +605,7 @@ def predict_single_patient(user_id, session_id):
                 "id_column": "ID",
                 "target_column": "EGFR",
             },
-            "sklearn_models": base_config.get("sklearn_models", {}),
-            "matlab_models": base_config.get("matlab_models", {}),
             "classifier_1": base_config.get("classifier_1", {}),
-            "classifier_2": base_config.get("classifier_2", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),
@@ -636,6 +629,9 @@ def predict_single_patient(user_id, session_id):
                 print(f"Single patient prediction error: {str(e)}")
                 import traceback
                 traceback.print_exc()
+                with open(os.path.join(output_dir, "debug_trace.txt"), "w") as dbg:
+                    dbg.write(f"Single patient prediction error: {str(e)}\n")
+                    dbg.write(traceback.format_exc())
 
         prediction_thread = threading.Thread(target=run_prediction, daemon=False)
         prediction_thread.start()

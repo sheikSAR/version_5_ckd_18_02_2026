@@ -126,7 +126,7 @@ for m = 1:length(nestedModels)
         regressionLayer];
     
     options = trainingOptions('adam', ...
-        'MaxEpochs',100, ...
+        'MaxEpochs',1000, ...
         'MiniBatchSize',32, ...
         'Verbose',false, ...
         'Plots','none');
@@ -184,7 +184,17 @@ metrics = [metrics; table("Ensemble", sqrt(mean((y-ensemblePred).^2)), ...
 models.Ridge      = ridge(y,X,1,0);
 models.Lasso      = lasso(X,y,'CV',5);
 models.ElasticNet = lasso(X,y,'Alpha',0.5,'CV',5);
+models.tree = tree;
+models.treePredictions = predict(tree,Xtest)
+models.DNN = net;                 % trained network
+models.DNNPred = yhat;            % predictions
+models.DNN_MC = yMC;              % all MC runs
+%models.DNNUncertainty = uncertainty; % uncertainty per sample
+models.DNNLayers = layers;        % optional (reproducibility)
+models.DNNOptions = options;      % optional
 
+% Optional: also store in feature importance struct
+%featureImportance.DNNUncertainty = uncertainty;
 %% ================= OUTPUT =================
 results.models = models;
 results.metrics = metrics;

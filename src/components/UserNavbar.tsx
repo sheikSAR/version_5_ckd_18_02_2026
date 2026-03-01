@@ -63,6 +63,14 @@ const UserNavbar: React.FC<UserNavbarProps> = ({
             />
           </div>
           <div className="navbar-divider"></div>
+          <div className="logo-wrapper">
+            <img
+              src="https://research.kalasalingam.ac.in/dist/img/logo.png"
+              alt="Kalasalingam"
+              className="navbar-logo mdrf-logo"
+            />
+          </div>
+          <div className="navbar-divider"></div>
           <div className="logo-wrapper text-logo-wrapper">
             <h2 className="navbar-text-logo">SESHU'S RESEARCH LAB</h2>
           </div>
