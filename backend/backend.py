@@ -186,6 +186,7 @@ def trigger_prediction():
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
+            "classifier_2": base_config.get("classifier_2", {}),
             "output": {
                 "json": os.path.join(output_dir, "regressor_predictions.json"),
                 "print_progress": True,
@@ -500,6 +501,7 @@ def trigger_user_prediction(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
+            "classifier_2": base_config.get("classifier_2", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),
@@ -606,6 +608,7 @@ def predict_single_patient(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
+            "classifier_2": base_config.get("classifier_2", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),

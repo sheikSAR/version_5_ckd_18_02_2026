@@ -219,8 +219,9 @@ const UserSessionPredictionPage = () => {
                           {predictions[selectedPatient].Classifier1.label}
                         </div>
                         <div className="classifier-probability">
-                          {(
-                            predictions[selectedPatient].Classifier1.probability * 100
+                          {(predictions[selectedPatient].Classifier1.probability < 50
+                            ? 100 - predictions[selectedPatient].Classifier1.probability
+                            : predictions[selectedPatient].Classifier1.probability
                           ).toFixed(1)}
                           % confidence
                         </div>
@@ -237,7 +238,7 @@ const UserSessionPredictionPage = () => {
                             <span className="model-name">{modelName}</span>
                             <span className="label">{result.label}</span>
                             <span className="probability">
-                              {(result.probability * 100).toFixed(1)}%
+                              {(result.probability < 50 ? 100 - result.probability : result.probability).toFixed(1)}%
                             </span>
                           </div>
                         ))}

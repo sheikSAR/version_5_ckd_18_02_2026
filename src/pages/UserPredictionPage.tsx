@@ -30,6 +30,7 @@ interface PredictionResult {
     label: string;
     probability: number;
   };
+  Classifier2: Record<string, { label: string; probability: number }>;
 }
 
 const UserPredictionPage = () => {
@@ -379,6 +380,7 @@ const UserPredictionPage = () => {
                 patientId={predictionResult.Patient_ID}
                 predictions={predictionResult.Predictions}
                 classifier1={predictionResult.Classifier1}
+                classifier2={predictionResult.Classifier2}
               />
             </div>
 
@@ -392,9 +394,9 @@ const UserPredictionPage = () => {
                       {predictionResult.Classifier1.label}
                     </span>
                     <span className="probability">
-                      {predictionResult.Classifier1.probability.toFixed(
-                        1
-                      )}
+                      {(predictionResult.Classifier1.probability < 50
+                        ? 100 - predictionResult.Classifier1.probability
+                        : predictionResult.Classifier1.probability).toFixed(1)}
                       %
                     </span>
                   </div>

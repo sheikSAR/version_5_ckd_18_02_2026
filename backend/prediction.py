@@ -6,6 +6,18 @@ import pandas as pd
 from typing import Dict, Any, List
 from backend.preprocess import encode_clinical_features
 
+import sys
+import importlib
+try:
+    import numpy._core
+except ImportError:
+    # Fallback for models pickled with numpy 2.x but loaded in numpy 1.x
+    import numpy.core
+    sys.modules['numpy._core'] = numpy.core
+    sys.modules['numpy._core.multiarray'] = numpy.core.multiarray
+    sys.modules['numpy._core.umath'] = numpy.core.umath
+    sys.modules['numpy._core.numerictypes'] = numpy.core.numerictypes
+
 print(">>> LOADED PREDICTION.PY WITH ZERO-PADDING FIX <<<")
 
 
@@ -234,6 +246,84 @@ def run_classifier_1(patient, clinical_columns, model, scaler, image_paths=None)
 
 
 
+def run_classifier_2(patient, clinical_columns, model, scaler, egfr_predictions, image_paths=None):
+    """Run Classifier 2 (CKD prediction conditioned on EGFR + clinical + image features)"""
+    results = {}
+    try:
+        import pandas as pd
+        
+        # Determine image features once for all models to speed up
+        img_feat = None
+        if image_paths:
+            img_feat = extract_image_features(image_paths)
+        if img_feat is None:
+            img_feat = np.zeros(2048)
+
+        # Baseline clinical subset
+        patient_subset = {}
+        for k in clinical_columns:
+            if k in patient and k != "Predicted_EGFR":
+                val = patient.get(k, 0.0)
+                if k == "gender" and isinstance(val, str):
+                    if val.upper() == "F":
+                        val = 1.0
+                    elif val.upper() == "M":
+                        val = 0.0
+                    else:
+                        try:
+                            val = float(val)
+                        except ValueError:
+                            val = 0.0
+                patient_subset[k] = float(val)
+
+        print(f"DEBUG Classifier 2: Running on Regressors: {egfr_predictions.keys()}")
+
+        # Loop through existing regressors predictions and run Classifier 2 for each
+        for model_name, egfr_val in egfr_predictions.items():
+            print(f"DEBUG Classifier 2: Running for {model_name} with EGFR: {egfr_val}")
+            try:
+                # Add the specific EGFR prediction into the feature list
+                temp_subset = patient_subset.copy()
+                temp_subset["Predicted_EGFR"] = float(egfr_val)
+                
+                patient_df = pd.DataFrame([temp_subset])
+                
+                # Make sure we're getting dummy vars correctly, but with just numericals it shouldn't matter
+                patient_df = pd.get_dummies(patient_df)
+                
+                # Align columns exactly with expected ones
+                patient_df = patient_df.reindex(columns=clinical_columns, fill_value=0)
+                
+                # Scale using C2 scaler
+                Xc_scaled = scaler.transform(patient_df)
+                
+                # Stack scaled clinical with images vector
+                X_final = np.hstack([Xc_scaled, img_feat.reshape(1, -1)])
+                
+                # Make Prediction
+                y_pred = model.predict(X_final)[0]
+                y_prob = model.predict_proba(X_final)[0][1]
+
+                results[model_name] = {
+                    "label": "CKD" if int(y_pred) == 1 else "Non-CKD",
+                    "probability": round(float(y_prob) * 100, 2)
+                }
+
+            except Exception as e:
+                import traceback
+                print(f"Error predicting for {model_name} in C2: {e}")
+                results[model_name] = {"label": "Error", "probability": 0.0}
+
+        return results
+
+    except Exception as e:
+        import traceback
+        with open("debug_errors.txt", "a") as f:
+            f.write(f"Classifier 2 Global Error: {str(e)}\n{traceback.format_exc()}\n")
+        print(f"Classifier 2 error: {str(e)}")
+        return {}
+
+
 def run(config_path: str) -> List[Dict[str, Any]]:
     cfg = load_config(config_path)
 
@@ -243,6 +333,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     egfr_col = data_cfg["target_column"]
 
     classifier_1_cfg = cfg.get("classifier_1", {})
+    classifier_2_cfg = cfg.get("classifier_2", {})
     images_dir = cfg.get("images_dir")
 
     output_cfg = cfg["output"]
@@ -279,6 +370,21 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"Warning: Could not load Classifier 1: {str(e)}")
             classifier_1_model = None
+            
+    # Load classifier 2 models if configured
+    classifier_2_model = None
+    classifier_2_scaler = None
+    classifier_2_clinical_cols = None
+
+    if classifier_2_cfg:
+        try:
+            print("Loading Classifier 2...")
+            classifier_2_clinical_cols = joblib.load(classifier_2_cfg.get("Clinical_Cols"))
+            classifier_2_model = joblib.load(classifier_2_cfg.get("Model"))
+            classifier_2_scaler = joblib.load(classifier_2_cfg.get("Scaler"))
+        except Exception as e:
+            print(f"Warning: Could not load Classifier 2: {str(e)}")
+            classifier_2_model = None
 
     print("Encoding clinical features for classifiers...")
     df = encode_clinical_features(df)
@@ -343,6 +449,27 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 image_paths if image_paths else None
             )
 
+        # Run Classifier 2 using original unencoded data and regression predictions
+        classifier_2_result = {}
+        print(f"DEBUG C2 PRE: model={classifier_2_model is not None}, scaler={classifier_2_scaler is not None}, cols={classifier_2_clinical_cols is not None}, preds={bool(predictions_dict)}")
+        if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None and predictions_dict:
+            image_paths = []
+            if "image_path" in patient_original and patient_original["image_path"]:
+                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
+            elif "image_paths" in patient_original and patient_original["image_paths"]:
+                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
+            elif discovered_images:
+                image_paths = discovered_images
+                
+            classifier_2_result = run_classifier_2(
+                patient_original,
+                list(classifier_2_clinical_cols),
+                classifier_2_model,
+                classifier_2_scaler,
+                predictions_dict,
+                image_paths if image_paths else None
+            )
+
         # Store image information in the entry
         images_used = []
         if discovered_images:
@@ -354,7 +481,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             "Predictions": predictions_dict,
             "Errors": errors_dict,
             "Classifier1": classifier_1_result,
-            "Classifier2": {},
+            "Classifier2": classifier_2_result,
             "Images_Used": images_used,
         }
 
@@ -393,8 +520,17 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         else:
             converted_entry["Classifier1"] = {"label": "Not Available", "probability": 0.0}
 
-        # Clear out Classifier 2 results completely
-        converted_entry["Classifier2"] = {}
+        # Map Classifier 2 results using the newly computed predictions
+        if "Classifier2" in entry and entry["Classifier2"]:
+            c2_out = {}
+            for model_lbl, c2_data in entry["Classifier2"].items():
+                c2_out[model_lbl] = {
+                    "label": c2_data.get("label", "Not Available"),
+                    "probability": float(c2_data.get("probability", 0.0))
+                }
+            converted_entry["Classifier2"] = c2_out
+        else:
+            converted_entry["Classifier2"] = {}
 
         # Add images information
         if entry.get("Images_Used"):
