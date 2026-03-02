@@ -130,9 +130,17 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       color: '#2d3748',
     });
 
+    const modelKeys = Object.keys(predictions);
+    const numModels = modelKeys.length;
+
+    // Calculate vertical space
+    const totalRows = 1 + modelKeys.reduce((acc, mk) => acc + (classifier2 && classifier2[mk] ? 2 : 1), 0);
+    const rowStep = height / (totalRows + 1);
+
     // 2. Classifier 1 Node (Clinical + Image) - Upper Branch
-    // Positioned visually distinct from regressor flow
-    const classifier1Y = height * 0.15;
+    let currentRow = 1;
+    const classifier1Y = rowStep * currentRow;
+    currentRow++;
     nodes.push({
       id: 'classifier1',
       type: 'classifier1',
@@ -175,19 +183,12 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     });
 
     // 3. Regressor Nodes + Classifier 2 Flow - Lower Area
-    const modelKeys = Object.keys(predictions);
-    const numModels = modelKeys.length;
-
-    // Calculate vertical space for regressors
-    // Start below the Classifier 1 area
-    const regressorStartY = height * 0.35;
-    const regressorEndY = height * 0.95;
-    const regressorStep =
-      (regressorEndY - regressorStartY) / (numModels - 1 || 1);
-
     modelKeys.forEach((modelName, i) => {
-      const y = regressorStartY + i * regressorStep;
       const color = getModelEdgeColor(i);
+
+      // Regressor is always on its own row
+      const regressorY = rowStep * currentRow;
+      currentRow++;
 
       // Regressor Node
       const regressorId = `regressor-${i}`;
@@ -196,8 +197,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         id: regressorId,
         type: 'regressor',
         x: colX.regressors,
-        y: y,
-        radius: 40, // Increased from 30
+        y: regressorY,
+        radius: 40,
         label: modelName,
         value: regPrediction,
         color: color,
@@ -214,9 +215,36 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         modelIndex: i,
       });
 
+      // ALWAYS create Regressor Outcome 
+      const regOutcomeId = `reg-outcome-${i}`;
+      const isCKD = regPrediction < 60;
+      nodes.push({
+        id: regOutcomeId,
+        type: 'outcome',
+        x: colX.outcomes,
+        y: regressorY,
+        radius: 38,
+        label: `${isCKD ? 'CKD' : 'NON-CKD'}\neGFR: ${regPrediction}`,
+        color: isCKD ? '#c53030' : '#2f855a',
+        modelIndex: i,
+      });
+
+      // Edge: Regressor -> Outcome
+      edges.push({
+        from: regressorId,
+        to: regOutcomeId,
+        type: 'regressor-outcome',
+        progress: 0,
+        label: `predicted eGFR: ${regPrediction}`,
+        color: color,
+        modelIndex: i,
+      });
+
       const hasC2 = classifier2 && classifier2[modelName];
 
       if (hasC2) {
+        const c2Y = rowStep * currentRow;
+        currentRow++;
         const c2Result = classifier2[modelName];
         const c2Id = `classifier2-${i}`;
 
@@ -225,8 +253,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           id: c2Id,
           type: 'classifier2',
           x: colX.classifiers,
-          y: y,
-          radius: 40, // Increased from 30
+          y: c2Y,
+          radius: 40,
           label: `Classifier 2\n(${modelName})`,
           color: '#d69e2e',
           modelIndex: i,
@@ -250,8 +278,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           id: outId,
           type: 'outcome',
           x: colX.outcomes,
-          y: y,
-          radius: 38, // Increased from 28
+          y: c2Y,
+          radius: 38,
           label: `${c2Result.label}\n${c2Confidence.toFixed(1)}%`,
           color: c2Result.label === 'CKD' ? '#c53030' : '#2f855a',
           modelIndex: i,
@@ -263,31 +291,6 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           to: outId,
           type: 'classifier2-outcome',
           progress: 0,
-          color: color,
-          modelIndex: i,
-        });
-      } else {
-        // Fallback to Regressor Outcome 
-        const regOutcomeId = `reg-outcome-${i}`;
-        const isCKD = regPrediction < 90;
-        nodes.push({
-          id: regOutcomeId,
-          type: 'outcome',
-          x: colX.outcomes,
-          y: y,
-          radius: 38, // Increased from 28
-          label: `${isCKD ? 'CKD' : 'NON-CKD'}\neGFR: ${regPrediction}`,
-          color: isCKD ? '#c53030' : '#2f855a',
-          modelIndex: i,
-        });
-
-        // Edge: Regressor -> Outcome
-        edges.push({
-          from: regressorId,
-          to: regOutcomeId,
-          type: 'regressor-outcome',
-          progress: 0,
-          label: `predicted eGFR: ${regPrediction}`,
           color: color,
           modelIndex: i,
         });
@@ -375,6 +378,20 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           1
         );
 
+        // Regressor -> Regressor Outcome (Always present now)
+        const regOutId = `reg-outcome-${i}`;
+        const regOutEdgeStart = regNodeStart + timings.regressorNodeDuration;
+        s.edgesProgress[`${regId}-${regOutId}`] = Math.min(
+          Math.max(0, elapsed - regOutEdgeStart) / timings.outcomeEdgeDuration,
+          1
+        );
+
+        const regOutNodeStart = regOutEdgeStart + timings.outcomeEdgeDuration;
+        s.outcomeNodesAlpha[regOutId] = Math.min(
+          Math.max(0, elapsed - regOutNodeStart) / timings.outcomeNodeDuration,
+          1
+        );
+
         if (hasC2) {
           const c2Id = `classifier2-${i}`;
           const outId = `c2-outcome-${i}`;
@@ -396,21 +413,6 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           // Classifier 2 -> Outcome
           const outEdgeStart = c2NodeStart + timings.classifier1NodeDuration;
           s.edgesProgress[`${c2Id}-${outId}`] = Math.min(
-            Math.max(0, elapsed - outEdgeStart) / timings.outcomeEdgeDuration,
-            1
-          );
-
-          // Outcome Node
-          const outNodeStart = outEdgeStart + timings.outcomeEdgeDuration;
-          s.outcomeNodesAlpha[outId] = Math.min(
-            Math.max(0, elapsed - outNodeStart) / timings.outcomeNodeDuration,
-            1
-          );
-        } else {
-          const outId = `reg-outcome-${i}`;
-          // Regressor -> Outcome
-          const outEdgeStart = regNodeStart + timings.regressorNodeDuration;
-          s.edgesProgress[`${regId}-${outId}`] = Math.min(
             Math.max(0, elapsed - outEdgeStart) / timings.outcomeEdgeDuration,
             1
           );
@@ -507,12 +509,12 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       ctx.fillStyle = '#4a5568';
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'center';
-      
+
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       const mx = (from.x + to.x) / 2;
       const my = (from.y + to.y) / 2;
-      
+
       // Calculate angle
       let angle = Math.atan2(dy, dx);
       // Keep text upright
@@ -526,7 +528,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       if (edge.type === 'patient-classifier1') {
         ctx.translate(dx * 0.25, dy * 0.25);
       }
-      
+
       ctx.rotate(angle);
 
       // Offset label slightly above the line
