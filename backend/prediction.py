@@ -52,7 +52,7 @@ def predict_json_model(model_name, model_data, patient_features):
     """
     matlab_feature_order = [
          "age", "gender", "Durationofdiabetes", "BMI", "Hypertension", 
-         "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_DR_OS"
+         "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_OS"
     ]
     
     # Extract X vector in exact order
@@ -60,9 +60,10 @@ def predict_json_model(model_name, model_data, patient_features):
     for f in matlab_feature_order:
         val = patient_features.get(f, 0.0)
         if f == "gender":
-            if str(val).upper() == "F":
+            val_str = str(val).strip().upper()
+            if val_str == "F" or val in [1, 1.0, "1", "1.0"]:
                 val = 1.0
-            elif str(val).upper() == "M":
+            elif val_str == "M" or val in [0, 0.0, "0", "0.0"]:
                 val = 0.0
             else:
                 val = 0.0
@@ -347,7 +348,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     FULL_CLINICAL_COLUMNS = [
         "age", "gender", "Hypertension", "HBA", "HB", 
         "BMI", "Durationofdiabetes", "OHA", "INSULIN", "CHO", "TRI", "DR_Label", 
-        "DR_OD_DR_OS", "EGFR"
+        "DR_OD_OS", "EGFR"
     ]
     
     for c in FULL_CLINICAL_COLUMNS:

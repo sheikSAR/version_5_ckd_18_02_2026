@@ -138,7 +138,8 @@ def normalize_key(key):
         "insulin": "INSULIN",
         "dr_od": "DR_OD",
         "dr_os": "DR_OS",
-        "dr_od_or_dr_os": "DR_OD_DR_OS",
+        "dr_od_or_dr_os": "DR_OD_OS",
+        "dr_od_os": "DR_OD_OS",
         "ckd_label": "CKD_Label",
     }
     return key_map.get(key.lower(), key)

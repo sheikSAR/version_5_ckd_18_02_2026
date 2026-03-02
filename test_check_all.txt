@@ -1,0 +1,45 @@
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_02_03_2026_02_08_42\input\initial_data.json ---
+{"ID": "ckd0012", "NAME": "patient", "age": 67, "gender": "F", "Hypertension": 1, "HBA": 8.1, "HB": 10.7, "BMI": 28.19, "Durationofdiabetes": 27.4, "OHA": 1, "INSULIN": 1, "CHO": 91, "TRI": 86, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_02_03_2026_00_51_49\input\initial_data.json ---
+{"ID": "kiuytf", "NAME": "patient", "age": 67, "gender": "F", "Hypertension": 1, "HBA": 8.1, "HB": 10.7, "BMI": 28.19, "Durationofdiabetes": 27.4, "OHA": 1, "INSULIN": 1, "CHO": 91, "TRI": 86, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_02_03_2026_00_51_05\input\initial_data.json ---
+{"ID": "kiuytf", "NAME": "patient", "age": 67, "gender": "F", "Hypertension": 1, "HBA": 8.1, "HB": 10.7, "BMI": 28.19, "Durationofdiabetes": 27.4, "OHA": 1, "INSULIN": 1, "CHO": 91, "TRI": 86, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_23_46_19\input\initial_data.json ---
+{"ID": "kiuytf", "NAME": "patient", "age": 19, "gender": "F", "Hypertension": 1, "HBA": 10, "HB": 13.1, "BMI": 20.65, "Durationofdiabetes": 6, "OHA": 0, "INSULIN": 0, "CHO": 229, "TRI": 63, "DR_Label": 0, "DR_OD_DR_OS": 0}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_23_45_39\input\initial_data.json ---
+{"ID": "kiuytf", "NAME": "patient", "age": 19, "gender": "F", "Hypertension": 1, "HBA": 10, "HB": 13.1, "BMI": 20.65, "Durationofdiabetes": 6, "OHA": 0, "INSULIN": 0, "CHO": 229, "TRI": 63, "DR_Label": 0, "DR_OD_DR_OS": 0}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_23_39_22\input\initial_data.json ---
+{"ID": "kiuytf", "NAME": "patient", "age": 19, "gender": "F", "Hypertension": 1, "HBA": 10, "HB": 13.1, "BMI": 20.65, "Durationofdiabetes": 6, "OHA": 0, "INSULIN": 0, "CHO": 229, "TRI": 63, "DR_Label": 0, "DR_OD_DR_OS": 0}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_23_34_22\input\initial_data.json ---
+{"ID": "ckd0012", "NAME": "patient", "age": 19, "gender": "F", "Hypertension": 1, "HBA": 10, "HB": 13.1, "BMI": 20.65, "Durationofdiabetes": 6, "OHA": 0, "INSULIN": 0, "CHO": 229, "TRI": 63, "DR_Label": 0, "DR_OD_DR_OS": 0}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_22_29_44\input\initial_data.json ---
+{"ID": "lkjh", "NAME": "patient", "age": 71, "gender": "F", "Hypertension": 1, "HBA": 7.7, "HB": 15.7, "BMI": 28.48, "Durationofdiabetes": 25, "OHA": 1, "INSULIN": 1, "CHO": 260, "TRI": 154, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_22_22_12\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_20_36_59\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_20_34_52\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_20_14_40\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_19_56_49\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_19_28_34\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 1, "DR_OD_DR_OS": 1}
+
+--- File: e:\ckd\Version_4_CKD\version4_ckd\user_sessions\user1\session_01_03_2026_19_24_46\input\initial_data.json ---
+{"ID": "hehe", "NAME": "patient", "age": 65, "gender": "M", "Hypertension": 1, "HBA": 6.5, "HB": 7.3, "BMI": 32.53, "Durationofdiabetes": 34.2, "OHA": 1, "INSULIN": 1, "CHO": 127, "TRI": 99, "DR_Label": 0, "DR_OD_DR_OS": 0}
+

@@ -75,13 +75,14 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-.upload-title {
+.relationship-graph-page .upload-title {
   margin: 0 0 16px 0;
   font-size: 28px;
   font-weight: 700;
@@ -290,7 +291,7 @@
     padding: 40px 30px;
   }
 
-  .upload-title {
+  .relationship-graph-page .upload-title {
     font-size: 24px;
     margin-bottom: 12px;
   }
@@ -339,7 +340,7 @@
     border-radius: 12px;
   }
 
-  .upload-title {
+  .relationship-graph-page .upload-title {
     font-size: 20px;
     margin-bottom: 10px;
   }
@@ -407,7 +408,7 @@
     border-radius: 10px;
   }
 
-  .upload-title {
+  .relationship-graph-page .upload-title {
     font-size: 18px;
     margin-bottom: 8px;
   }

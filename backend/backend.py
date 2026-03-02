@@ -780,6 +780,380 @@ def upload_user_file(user_id):
         return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
 
 
+@app.route("/api/validate-bulk-data", methods=["POST"])
+def validate_bulk_data():
+    """
+    Validate bulk upload data (Excel) + check local image directory.
+    Returns warnings (for Excel NaNs) and errors (for missing images).
+    """
+    try:
+        # 1. Parse request
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No Excel file provided"}), 400
+            
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+            
+        image_folder_path = request.form.get("image_folder_path")
+        image_filenames_json = request.form.get("image_filenames")
+        
+        if not image_folder_path and not image_filenames_json:
+            return jsonify({"success": False, "error": "No image folder path or image metadata provided"}), 400
+            
+        if image_folder_path:
+            if not os.path.exists(image_folder_path) or not os.path.isdir(image_folder_path):
+                return jsonify({"success": False, "error": f"Image folder path does not exist or is not a directory: {image_folder_path}"}), 400
+
+        # 2. Read Excel
+        try:
+            file_content = file.read()
+            df = pd.read_excel(io.BytesIO(file_content))
+            
+            # Ensure ID column exists
+            id_col = "ID"
+            if id_col not in df.columns:
+                # Try finding case-insensitive 'id'
+                cols_lower = {c.lower(): c for c in df.columns}
+                if 'id' in cols_lower:
+                    df = df.rename(columns={cols_lower['id']: "ID"})
+                else:
+                    return jsonify({"success": False, "error": "Excel file must contain an 'ID' column"}), 400
+                    
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Failed to read Excel file: {str(e)}"}), 400
+
+        warnings = []
+        errors = []
+
+        # 3. Check for NaNs
+        for index, row in df.iterrows():
+            # Check if there are any na values in the row
+            if row.isna().any():
+                patient_id = row.get("ID")
+                patient_id_str = "Unknown ID" if pd.isna(patient_id) else str(patient_id)
+                
+                # Find which specific columns are NaN for this patient
+                missing_cols = row.index[row.isna()].tolist()
+                if missing_cols:
+                    warnings.append(f"Patient {patient_id_str}: Missing values in columns: {', '.join(missing_cols)}")
+
+        # 4. Check images for each ID
+        patient_ids = df["ID"].dropna().astype(str).tolist()
+        
+        # Get all files either from directory or from JSON list
+        try:
+            if image_folder_path:
+                all_files = os.listdir(image_folder_path)
+            else:
+                all_files = json.loads(image_filenames_json)
+            # Use just the basename for matching if it includes paths
+            all_files_lower = {os.path.basename(f).lower(): os.path.basename(f) for f in all_files}
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Failed to retrieve image list: {str(e)}"}), 400
+
+        for pid in patient_ids:
+            # We accept id_1.jpg, id_2.png, id(1).jpg, etc.
+            # Looking for variations of pid + separator + number
+            pid_lower = str(pid).lower()
+            
+            patient_images = []
+            for f_lower, f_actual in all_files_lower.items():
+                # Check extensions
+                if not f_lower.endswith(('.jpg', '.jpeg', '.png')):
+                    continue
+                    
+                filename_no_ext = os.path.splitext(f_lower)[0]
+                
+                # Check matching patterns: pid_1, pid(1), pid-1
+                if filename_no_ext.startswith(f"{pid_lower}_") or \
+                   filename_no_ext.startswith(f"{pid_lower}(") or \
+                   filename_no_ext.startswith(f"{pid_lower}-"):
+                    patient_images.append(f_actual)
+            
+            img_count = len(patient_images)
+            if img_count == 0:
+                errors.append(f"Patient {pid}: No images found. Expected files like {pid}_1.jpg or {pid}(1).png")
+            elif img_count > 4:
+                warnings.append(f"Patient {pid}: Found {img_count} images, but maximum is 4. Only first 4 will be used.")
+
+        return jsonify({
+            "success": True, 
+            "warnings": warnings, 
+            "errors": errors,
+            "patient_count": len(patient_ids)
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": f"Validation failed: {str(e)}"}), 500
+
+
+@app.route("/user-sessions/<user_id>/upload-bulk-local", methods=["POST"])
+def upload_bulk_local(user_id):
+    """
+    Handle bulk file upload for user sessions using a local directory for images.
+    Creates a session, saves Excel, and copies local images to the session.
+    """
+    try:
+        # 1. Parse request
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+            
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+            
+        image_folder_path = request.form.get("image_folder_path")
+        if not image_folder_path:
+            return jsonify({"success": False, "error": "No image folder path provided"}), 400
+            
+        if not os.path.exists(image_folder_path) or not os.path.isdir(image_folder_path):
+            return jsonify({"success": False, "error": f"Image folder path does not exist or is not a directory: {image_folder_path}"}), 400
+
+        # Generate session ID
+        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+        session_id = f"session_bulk_{timestamp}"
+
+        # Create session directories
+        user_path = os.path.join(USER_SESSIONS_DIR, user_id)
+        session_path = os.path.join(user_path, session_id)
+        input_dir = os.path.join(session_path, "input")
+        output_dir = os.path.join(session_path, "output")
+        images_dir = os.path.join(input_dir, "images")
+
+        os.makedirs(input_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(images_dir, exist_ok=True)
+
+        # 2. Process Excel
+        try:
+            file_content = file.read()
+            df = pd.read_excel(io.BytesIO(file_content))
+            
+            # Ensure ID column
+            id_col = "ID"
+            if id_col not in df.columns:
+                cols_lower = {c.lower(): c for c in df.columns}
+                if 'id' in cols_lower:
+                    df = df.rename(columns={cols_lower['id']: "ID"})
+                else:
+                    return jsonify({"success": False, "error": "Excel file must contain an 'ID' column"}), 400
+
+            # Preprocess and save JSON
+            initial_data_path = os.path.join(input_dir, "initial_data.json")
+            processed_rows = preprocess_excel_data(df)
+
+            from backend.preprocess import add_chained_probabilities
+            processed_rows_with_probs = [
+                add_chained_probabilities(record, df) for record in processed_rows
+            ]
+
+            with open(initial_data_path, "w") as f:
+                json.dump(processed_rows_with_probs, f, indent=2)
+
+            # Save original Excel
+            input_xlsx_path = os.path.join(input_dir, "inputData.xlsx")
+            df.to_excel(input_xlsx_path, index=False)
+            
+        except ValueError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"success": False, "error": f"File processing failed: {str(e)}"}), 400
+
+        # 3. Copy Images
+        patient_ids = df["ID"].dropna().astype(str).tolist()
+        all_files = os.listdir(image_folder_path)
+        all_files_lower = {f.lower(): f for f in all_files}
+        
+        images_copied = 0
+        image_files_list = []
+
+        for pid in patient_ids:
+            pid_lower = str(pid).lower()
+            copied_for_patient = 0
+            
+            for f_lower, f_actual in all_files_lower.items():
+                if copied_for_patient >= 4:
+                    break # Max 4 per patient
+                    
+                if not f_lower.endswith(('.jpg', '.jpeg', '.png')):
+                    continue
+                    
+                filename_no_ext = os.path.splitext(f_lower)[0]
+                
+                if filename_no_ext.startswith(f"{pid_lower}_") or \
+                   filename_no_ext.startswith(f"{pid_lower}(") or \
+                   filename_no_ext.startswith(f"{pid_lower}-"):
+                    
+                    src_path = os.path.join(image_folder_path, f_actual)
+                    
+                    # Target path will be simply copied over, keeping original name
+                    # Or we could rename them to standardize if needed, but prediction pipeline
+                    # might just search for patient ID in the filename.
+                    dst_path = os.path.join(images_dir, f_actual)
+                    
+                    try:
+                        shutil.copy2(src_path, dst_path)
+                        image_files_list.append(dst_path)
+                        images_copied += 1
+                        copied_for_patient += 1
+                    except Exception as e:
+                        print(f"Warning: Could not copy image {src_path}: {e}")
+
+        # 4. Save Metadata
+        metadata = {
+            "user_id": user_id,
+            "session_id": session_id,
+            "created_at": datetime.now().isoformat(),
+            "input_data_saved": True,
+            "file_uploaded": True,
+            "images_uploaded": images_copied,
+            "image_files": image_files_list,
+            "patient_count": len(patient_ids),
+            "is_bulk": True
+        }
+        metadata_path = os.path.join(session_path, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+
+        return jsonify({
+            "success": True,
+            "message": "Bulk session created successfully",
+            "sessionId": session_id,
+            "userId": user_id,
+            "imagesCopied": images_copied,
+            "patients": len(patient_ids)
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
+@app.route("/user-sessions/<user_id>/upload-bulk-files", methods=["POST"])
+def upload_bulk_files(user_id):
+    """
+    Handle bulk file upload for user sessions with uploaded image files.
+    Creates a session, saves Excel, and saves the uploaded images.
+    """
+    try:
+        # 1. Parse request
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+            
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+
+        # Generate session ID
+        timestamp = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+        session_id = f"session_bulk_{timestamp}"
+
+        # Create session directories
+        user_path = os.path.join(USER_SESSIONS_DIR, user_id)
+        session_path = os.path.join(user_path, session_id)
+        input_dir = os.path.join(session_path, "input")
+        output_dir = os.path.join(session_path, "output")
+        images_dir = os.path.join(input_dir, "images")
+
+        os.makedirs(input_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(images_dir, exist_ok=True)
+
+        # 2. Process Excel
+        try:
+            file_content = file.read()
+            df = pd.read_excel(io.BytesIO(file_content))
+            
+            # Ensure ID column
+            id_col = "ID"
+            if id_col not in df.columns:
+                cols_lower = {c.lower(): c for c in df.columns}
+                if 'id' in cols_lower:
+                    df = df.rename(columns={cols_lower['id']: "ID"})
+                else:
+                    return jsonify({"success": False, "error": "Excel file must contain an 'ID' column"}), 400
+
+            # Preprocess and save JSON
+            initial_data_path = os.path.join(input_dir, "initial_data.json")
+            processed_rows = preprocess_excel_data(df)
+
+            from backend.preprocess import add_chained_probabilities
+            processed_rows_with_probs = [
+                add_chained_probabilities(record, df) for record in processed_rows
+            ]
+
+            with open(initial_data_path, "w") as f:
+                json.dump(processed_rows_with_probs, f, indent=2)
+
+            # Save original Excel
+            input_xlsx_path = os.path.join(input_dir, "inputData.xlsx")
+            df.to_excel(input_xlsx_path, index=False)
+            
+        except ValueError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"success": False, "error": f"File processing failed: {str(e)}"}), 400
+
+        # 3. Save Uploaded Images
+        patient_ids = df["ID"].dropna().astype(str).tolist()
+        
+        images_saved = 0
+        image_files_list = []
+
+        # The files will come as 'bulk_image_0', 'bulk_image_1', etc.
+        for key in request.files.keys():
+            if key.startswith('bulk_image_'):
+                img_file = request.files[key]
+                if img_file and img_file.filename != "":
+                    # Get just the basename
+                    basename = os.path.basename(img_file.filename)
+                    dst_path = os.path.join(images_dir, basename)
+                    try:
+                        img_file.save(dst_path)
+                        image_files_list.append(dst_path)
+                        images_saved += 1
+                    except Exception as e:
+                        print(f"Warning: Could not save image {basename}: {e}")
+
+        # 4. Save Metadata
+        metadata = {
+            "user_id": user_id,
+            "session_id": session_id,
+            "created_at": datetime.now().isoformat(),
+            "input_data_saved": True,
+            "file_uploaded": True,
+            "images_uploaded": images_saved,
+            "image_files": image_files_list,
+            "patient_count": len(patient_ids),
+            "is_bulk": True
+        }
+        metadata_path = os.path.join(session_path, "metadata.json")
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+
+        return jsonify({
+            "success": True,
+            "message": "Bulk session created and files uploaded successfully",
+            "sessionId": session_id,
+            "userId": user_id,
+            "imagesCopied": images_saved,
+            "patients": len(patient_ids)
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
 @app.route("/api/upload", methods=["POST"])
 def upload_file():
     """
@@ -1011,7 +1385,7 @@ def user_predict():
             "DR_OS",
             "DR_SEVERITY_OS",
             "DME_OS",
-            "DR_OD_DR_OS",
+            "DR_OD_OS",
             "CKD_Stage",
             "DR_Stage",
         ]

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CheckmarkCircle01Icon, ArrowRight01Icon, InformationCircleIcon } from 'hugeicons-react';
 import '../styles/PatientInputForm.css';
 
 interface PatientData {
@@ -15,7 +16,7 @@ interface PatientData {
   TRI: number;
   HB: number;
   DR_Label: number;
-  DR_OD_DR_OS?: number;
+  DR_OD_OS: number;
 }
 
 interface PatientInputFormProps {
@@ -37,6 +38,7 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
     TRI: '',
     HB: '',
     DR_Label: '',
+    DR_OD_OS: '',
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -67,7 +69,7 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
       newErrors.BMI = 'Invalid';
     }
 
-    const requiredFields: (keyof PatientData)[] = ['gender', 'Hypertension', 'OHA', 'INSULIN', 'DR_Label', 'Durationofdiabetes', 'HBA', 'CHO', 'TRI', 'HB'];
+    const requiredFields: (keyof PatientData)[] = ['gender', 'Hypertension', 'OHA', 'INSULIN', 'DR_OD_OS', 'Durationofdiabetes', 'HBA', 'CHO', 'TRI', 'HB'];
     requiredFields.forEach(field => {
       if (formData[field] === '') {
         newErrors[field] = 'Required';
@@ -83,9 +85,8 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
 
     if (validateForm()) {
       const finalData = { ...formData } as PatientData;
-      // The backend needs DR_OD_DR_OS for legacy mappings, but the user only inputs DR_Label. 
-      // User expects these to be identical for UI simplicity.
-      finalData.DR_OD_DR_OS = finalData.DR_Label;
+      // The backend needs DR_Label for Classifier 1, but the true dataset column is DR_OD_OS.
+      finalData.DR_Label = finalData.DR_OD_OS || 0;
 
       onSubmit(finalData);
       setIsSubmitted(true);
@@ -280,48 +281,42 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
           {errors.HB && <span className="error-text">{errors.HB}</span>}
         </div>
 
-        {/* DR Positive */}
+        {/* DR_OD_OS */}
         <div className="form-group">
-          <label htmlFor="dr_label">DR Positive</label>
+          <label htmlFor="dr_od_os">DR_OD_OS</label>
           <select
-            id="dr_label"
-            value={formData.DR_Label}
-            onChange={(e) => handleInputChange('DR_Label', e.target.value)}
-            className={errors.DR_Label ? 'error' : ''}
+            id="dr_od_os"
+            value={formData.DR_OD_OS}
+            onChange={(e) => handleInputChange('DR_OD_OS', e.target.value)}
+            className={errors.DR_OD_OS ? 'error' : ''}
           >
             <option value="" disabled>Select</option>
-            <option value="0">No</option>
-            <option value="1">Yes</option>
+            <option value="0">0 (No)</option>
+            <option value="1">1 (Yes)</option>
           </select>
-          {errors.DR_Label && <span className="error-text">{errors.DR_Label}</span>}
+          {errors.DR_OD_OS && <span className="error-text">{errors.DR_OD_OS}</span>}
         </div>
       </div>
 
       <div className="form-actions">
         <button
           type="submit"
-          className={`submit-button ${isSubmitted ? 'submitted' : ''}`}
+          className={`patient-submit-button ${isSubmitted ? 'submitted' : ''}`}
         >
           {isSubmitted ? (
             <>
-              <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+              <CheckmarkCircle01Icon size={20} />
               Data Saved
             </>
           ) : (
-            'Proceed with Entered Data'
+            <>Proceed with Entered Data <ArrowRight01Icon size={20} /></>
           )}
         </button>
       </div>
 
-      <div className="form-info">
-        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <p className="info-text">
+      <div className="form-info" style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '16px', backgroundColor: '#f8fafc', borderLeft: '4px solid #3b82f6', borderRadius: '6px', color: '#334155' }}>
+        <InformationCircleIcon size={24} color="#3b82f6" style={{ flexShrink: 0 }} />
+        <p className="info-text" style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
           All fields are required. Values will be used for eGFR prediction
           and CKD classification.
         </p>

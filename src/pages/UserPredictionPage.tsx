@@ -4,6 +4,15 @@ import axios from 'axios';
 import PatientInputForm from '../components/PatientInputForm';
 import UserGraphRenderer from '../components/UserGraphRenderer';
 import { useUserSession } from '../context/UserSessionContext';
+import {
+  AlertCircleIcon,
+  CheckmarkCircle01Icon,
+  AiViewIcon,
+  UserCircleIcon,
+  Image01Icon,
+  AnalyticsUpIcon,
+  CloudUploadIcon
+} from 'hugeicons-react';
 import '../styles/UserPredictionPage.css';
 
 interface PatientData {
@@ -20,7 +29,7 @@ interface PatientData {
   TRI: number;
   HB: number;
   DR_Label: number;
-  DR_OD_DR_OS?: number;
+  DR_OD_OS: number;
 }
 
 interface PredictionResult {
@@ -113,7 +122,7 @@ const UserPredictionPage = () => {
         CHO: patientData.CHO,
         TRI: patientData.TRI,
         DR_Label: patientData.DR_Label,
-        DR_OD_DR_OS: patientData.DR_OD_DR_OS,
+        DR_OD_OS: patientData.DR_OD_OS,
       };
 
       const sessionResponse = await axios.post(
@@ -269,9 +278,12 @@ const UserPredictionPage = () => {
         >
           <div className="section-header">
             <h2>
+              <UserCircleIcon size={24} color="#0f172a" />
               1. Patient Clinical Data
               {isDataSubmitted && (
-                <span className="step-checkmark">✓ Saved</span>
+                <span className="step-checkmark" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <CheckmarkCircle01Icon size={16} /> Saved
+                </span>
               )}
             </h2>
             <p className="section-description">
@@ -287,7 +299,9 @@ const UserPredictionPage = () => {
         {/* Section 2: Image Upload */}
         <section className="input-section image-upload-section">
           <div className="section-header">
-            <h2>2. Eye Images</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Image01Icon size={24} color="#0f172a" /> 2. Eye Images
+            </h2>
             <p className="section-description">
               Upload up to 4 eye images
             </p>
@@ -335,7 +349,24 @@ const UserPredictionPage = () => {
         {/* Section 3: Analyze Button */}
         <section className="analyze-section">
           <button
-            className={`analyze-button ${isAnalyzing ? 'analyzing' : ''}`}
+            style={{
+              padding: '16px 40px',
+              backgroundColor: isAnalyzing || !patientData ? '#e5e7eb' : '#0f172a',
+              color: isAnalyzing || !patientData ? '#9ca3af' : 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: isAnalyzing || !patientData ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              width: '100%',
+              maxWidth: '400px',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
             onClick={handleAnalyze}
             disabled={isAnalyzing || !patientData}
           >
@@ -345,7 +376,7 @@ const UserPredictionPage = () => {
                 Analyzing Patient...
               </>
             ) : (
-              'Analyze Now'
+              <><AiViewIcon size={20} /> Analyze Now</>
             )}
           </button>
 
@@ -361,14 +392,21 @@ const UserPredictionPage = () => {
             </div>
           )}
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '15px', borderRadius: '6px', marginTop: '15px', display: 'flex', alignItems: 'flex-start', gap: '10px', maxWidth: '600px', width: '100%' }}>
+              <AlertCircleIcon size={20} color="#991b1b" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '14px', lineHeight: '1.5' }}>{error}</div>
+            </div>
+          )}
         </section>
 
         {/* Section 4: Prediction Visualization */}
         {predictionResult && (
           <section className="visualization-section">
             <div className="section-header">
-              <h2>3. Prediction Results - DL Graph Visualization</h2>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AnalyticsUpIcon size={24} color="#0f172a" /> 3. Prediction Results & Visualization
+              </h2>
               <p className="section-description">
                 Inference pipeline: Patient → Regressors → Classifiers → CKD
                 Prediction
@@ -472,16 +510,10 @@ const ImageUploadZone: React.FC<{
       onClick={handleClick}
     >
       <div className="upload-content">
-        <svg
-          className="upload-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17 8 12 3 7 8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
+        <CloudUploadIcon
+          size={48}
+          color="#9ca3af"
+        />
         <p className="upload-title">
           Drag and drop images here or click to select
         </p>

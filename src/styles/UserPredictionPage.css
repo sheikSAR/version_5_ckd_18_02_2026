@@ -86,13 +86,13 @@
 }
 
 .image-upload-zone {
-  border: 2px dashed #d1d5db;
+  border: 2px dashed #94a3b8;
   border-radius: 12px;
   padding: 50px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #f9fafb;
+  background: #f8fafc;
   position: relative;
   overflow: hidden;
 }
@@ -111,8 +111,8 @@
 }
 
 .image-upload-zone.dragging {
-  border-color: #0f172a;
-  background: #f3f4f6;
+  border-color: #3b82f6;
+  background: #eff6ff;
 }
 
 .upload-content {
@@ -138,7 +138,7 @@
 .upload-subtitle {
   margin: 0;
   font-size: 13px;
-  color: #999;
+  color: #64748b;
 }
 
 .file-input {
@@ -281,13 +281,13 @@
   gap: 12px;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.3);
 }
 
 .analyze-button:hover:not(:disabled) {
   background: #1e293b;
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 8px -1px rgba(15, 23, 42, 0.4), 0 4px 6px -2px rgba(15, 23, 42, 0.2);
 }
 
 .analyze-button:disabled {
