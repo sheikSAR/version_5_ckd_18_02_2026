@@ -29,9 +29,18 @@ CLASSIFIER_1_CLINICAL_FEATURES = [
 ]
 
 JSON_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models.json"
+JSON_LEVEL2_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models_level2.json"
 
 # Models we expect to load and run from the JSON
 REGRESSION_MODELS = [
+    "Tree"
+]
+
+LEVEL2_REGRESSION_MODELS = [
+    "LINEAR", 
+    "ROBUST", 
+    "QUADRATIC", 
+    "Ridge", 
     "Tree"
 ]
 
@@ -44,11 +53,12 @@ def load_config(path):
         return json.load(f)
 
 
-def predict_json_model(model_name, model_data, patient_features):
+def predict_json_model(model_name, model_data, patient_features, is_level2=False, level1_egfr=0.0, level1_label=0.0):
     """
     Predicts using the exported JSON weights.
-    Order of features expected by the MATLAB models:
-    ["age", "gender", "Durationofdiabetes", "BMI", "Hypertension", "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_DR_OS"]
+    Order of features expected by the MATLAB Level 1 models:
+    ["age", "gender", "Durationofdiabetes", "BMI", "Hypertension", "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_OD_OS"]
+    Level 2 models append: ["predicted eGFR", "Predicted_Label"]
     """
     matlab_feature_order = [
          "age", "gender", "Durationofdiabetes", "BMI", "Hypertension", 
@@ -69,13 +79,16 @@ def predict_json_model(model_name, model_data, patient_features):
                 val = 0.0
         X_vals.append(float(val))
         
+    if is_level2:
+        X_vals.append(float(level1_egfr))
+        X_vals.append(float(level1_label))
+        
     X = np.array(X_vals)
     
     y_pred = 0.0
     
     if model_name == "Tree":
         # model_data contains: CutPredictor, CutPoint, Children, NodeMean, IsBranchNode
-        # All arrays are aligned node-wise. Matlab indices are 1-based, we'll convert to 0-based
         current_node = 0 # root
         
         cut_predictors = model_data.get("CutPredictor", [])
@@ -85,12 +98,8 @@ def predict_json_model(model_name, model_data, patient_features):
         is_branch = model_data.get("IsBranchNode", [])
         
         while current_node < len(is_branch) and is_branch[current_node]:
-            # MATLAB predictor name like 'x1', 'x12', or potentially feature name
             cut_pred_name = cut_predictors[current_node]
             
-            # Usually Matlab export strings are like 'x1', 'x2' etc. depending on feature count
-            # In Matlab format for our data, it might be the actual column name or 'x{col}'
-            # Our array X is ordered by matlab_feature_order [0..11]
             if isinstance(cut_pred_name, str) and cut_pred_name.startswith('x'):
                 try:
                     feat_idx = int(cut_pred_name[1:]) - 1
@@ -104,20 +113,40 @@ def predict_json_model(model_name, model_data, patient_features):
             cut_val = cut_points[current_node]
             patient_val = X[feat_idx]
             
-            # Check left vs right node navigation
             if patient_val < cut_val:
-                # MATLAB is 1-indexed, we subtract 1
                 current_node = int(children[current_node][0]) - 1
             else:
                 current_node = int(children[current_node][1]) - 1
                 
-        # We are at a leaf node
         if current_node < len(node_means):
             y_pred = float(node_means[current_node])
         else:
             y_pred = 0.0
 
+    elif model_name in ["LINEAR", "ROBUST"]:
+        coeffs = model_data.get("Coefficients", [])
+        if len(coeffs) > len(X):
+            y_pred = coeffs[0] + np.dot(X, coeffs[1:])
+        else:
+            y_pred = 0.0
+            
+    elif model_name == "QUADRATIC":
+        coeffs = model_data.get("Coefficients", [])
+        X_quad = np.concatenate([X, X**2])
+        if len(coeffs) > len(X_quad):
+            y_pred = coeffs[0] + np.dot(X_quad, coeffs[1:])
+        else:
+            y_pred = 0.0
+
+    elif model_name == "Ridge":
+        # Ridge output is a list of coefficients. First element is intercept.
+        if isinstance(model_data, list) and len(model_data) > len(X):
+            y_pred = model_data[0] + np.dot(X, model_data[1:])
+        else:
+            y_pred = 0.0
+
     return round(float(y_pred), 2)
+
 
 
 def get_cnn_model():
@@ -396,6 +425,12 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     except Exception as e:
         print(f"Warning: Could not load {JSON_MODEL_FILE}: {e}")
         exported_matlab_models = {}
+        
+    try:
+        exported_level2_models = load_config(JSON_LEVEL2_MODEL_FILE)
+    except Exception as e:
+        print(f"Warning: Could not load {JSON_LEVEL2_MODEL_FILE}: {e}")
+        exported_level2_models = {}
 
     # Discover images from images directory
     discovered_images = discover_images(images_dir)
@@ -415,31 +450,54 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         predictions_dict = {}
         errors_dict = {}
 
-        # Process the newly exported regression models over raw features
-        if exported_matlab_models:
-            for model_name in REGRESSION_MODELS:
-                if model_name in exported_matlab_models:
-                    try:
-                        pred = predict_json_model(model_name, exported_matlab_models[model_name], patient_original)
-                        predictions_dict[model_name] = pred
-                        if has_actual:
-                            errors_dict[model_name] = round(pred - actual, 2)
-                    except Exception as e:
-                        import traceback
-                        traceback.print_exc()
-                        print(f"Warning: JSON Model {model_name} failed: {e}")
-
-        # Run Classifier 1 using original unencoded data
-        classifier_1_result = None
-        if classifier_1_model is not None and classifier_1_scaler is not None and classifier_1_clinical_cols is not None:
-            # Get image paths: first check original patient data, then use discovered images
+        # ---------------- LEVEL 1 PIPELINE ----------------
+        
+        # 1. Run Level 1 Tree to get Level 1 predicted eGFR
+        level1_tree_pred = None
+        if exported_matlab_models and "Tree" in exported_matlab_models:
+            try:
+                level1_tree_pred = predict_json_model("Tree", exported_matlab_models["Tree"], patient_original, is_level2=False)
+            except Exception as e:
+                print(f"Warning: Level 1 JSON Model Tree failed: {e}")
+                
+        # 2. Run Classifier 2 to get Level 1 predicted label (using Level 1 Tree eGFR)
+        classifier_2_result = {}
+        level1_label_num = 0.0 # Default Non-CKD
+        if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None and level1_tree_pred is not None:
             image_paths = []
             if "image_path" in patient_original and patient_original["image_path"]:
                 image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
             elif "image_paths" in patient_original and patient_original["image_paths"]:
                 image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
             elif discovered_images:
-                # Use discovered images if no patient-specific images provided
+                image_paths = discovered_images
+                
+            # Create a dictionary with just the Tree prediction to pass to C2
+            c2_input_preds = {"Tree": level1_tree_pred}
+                
+            classifier_2_result = run_classifier_2(
+                patient_original,
+                list(classifier_2_clinical_cols),
+                classifier_2_model,
+                classifier_2_scaler,
+                c2_input_preds,
+                image_paths if image_paths else None
+            )
+            
+            # Extract the raw 1.0 or 0.0 output from C2 for the Tree model
+            c2_tree_res = classifier_2_result.get("Tree", {})
+            c2_label_str = c2_tree_res.get("label", "Non-CKD")
+            level1_label_num = 1.0 if c2_label_str == "CKD" else 0.0
+
+        # Run Classifier 1 (Independent)
+        classifier_1_result = None
+        if classifier_1_model is not None and classifier_1_scaler is not None and classifier_1_clinical_cols is not None:
+            image_paths = []
+            if "image_path" in patient_original and patient_original["image_path"]:
+                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
+            elif "image_paths" in patient_original and patient_original["image_paths"]:
+                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
+            elif discovered_images:
                 image_paths = discovered_images
 
             classifier_1_result = run_classifier_1(
@@ -450,26 +508,28 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 image_paths if image_paths else None
             )
 
-        # Run Classifier 2 using original unencoded data and regression predictions
-        classifier_2_result = {}
-        print(f"DEBUG C2 PRE: model={classifier_2_model is not None}, scaler={classifier_2_scaler is not None}, cols={classifier_2_clinical_cols is not None}, preds={bool(predictions_dict)}")
-        if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None and predictions_dict:
-            image_paths = []
-            if "image_path" in patient_original and patient_original["image_path"]:
-                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
-            elif "image_paths" in patient_original and patient_original["image_paths"]:
-                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
-            elif discovered_images:
-                image_paths = discovered_images
-                
-            classifier_2_result = run_classifier_2(
-                patient_original,
-                list(classifier_2_clinical_cols),
-                classifier_2_model,
-                classifier_2_scaler,
-                predictions_dict,
-                image_paths if image_paths else None
-            )
+        # ---------------- LEVEL 2 PIPELINE ----------------
+        
+        # Process the newly exported regression models over raw features + level 1 predictions
+        if exported_level2_models and level1_tree_pred is not None:
+            for model_name in LEVEL2_REGRESSION_MODELS:
+                if model_name in exported_level2_models:
+                    try:
+                        pred = predict_json_model(
+                            model_name, 
+                            exported_level2_models[model_name], 
+                            patient_original, 
+                            is_level2=True,
+                            level1_egfr=level1_tree_pred,
+                            level1_label=level1_label_num
+                        )
+                        predictions_dict[model_name] = pred
+                        if has_actual:
+                            errors_dict[model_name] = round(pred - actual, 2)
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        print(f"Warning: Level 2 JSON Model {model_name} failed: {e}")
 
         # Store image information in the entry
         images_used = []

@@ -1,49 +1,47 @@
-function exportModelsToJson(results, filename)
-% exportModelsToJson Extracts model parameters and saves them to a standard format.
-%   It saves simple model weights/coefficients to a JSON file (readable by Python),
-%   and saves the entire `results.models` bundle to a native .mat file since 
-%   complex models like neural networks and bagged trees cannot be easily serialized to JSON.
+function exportAllModelsToJson(results, filename)
+% Fully serializes all CKD models into JSON-friendly structures.
+% No MAT fallback. Everything converted to numeric structs.
 
     if nargin < 2
-        filename = 'exported_models.json';
-    end
-    
-    if nargin < 1 || ~isfield(results, 'models')
-        error('The "results" struct with a "models" field must be provided as the first argument.');
-    end
-    
-    exportData = struct();
-    
-    % Linear Model
-    if isfield(results.models, 'linear') && ~isempty(results.models.linear)
-        exportData.linear = struct();
-        exportData.linear.Coefficients = results.models.linear.Coefficients.Estimate;
-        exportData.linear.VariableNames = results.models.linear.VariableNames;
-    end
-    
-    % Robust Model
-    if isfield(results.models, 'robust') && ~isempty(results.models.robust)
-        exportData.robust = struct();
-        exportData.robust.Coefficients = results.models.robust.Coefficients.Estimate;
-    end
-    
-    % Ridge
-    if isfield(results.models, 'Ridge')
-        exportData.Ridge = results.models.Ridge;
-    end
-    
-    % Lasso
-    if isfield(results.models, 'Lasso')
-        exportData.Lasso = results.models.Lasso;
-    end
-    
-    % ElasticNet
-    if isfield(results.models, 'ElasticNet')
-        exportData.ElasticNet = results.models.ElasticNet;
+        filename = 'CKD_Exported_All_Models.json';
     end
 
-    % Tree Export
-    if isfield(results.models, 'tree') && ~isempty(results.models.tree)
+    if nargin < 1 || ~isfield(results,'models')
+        error('results struct with models field is required.');
+    end
+
+    exportData = struct();
+
+    %% ================= PERFORMANCE TABLE =================
+    if isfield(results,'performance')
+        exportData.Performance = results.performance;
+    end
+
+    %% ================= LINEAR MODELS =================
+    linearModels = {'linear','robust','quadratic','polynomial3'};
+    for i = 1:length(linearModels)
+        name = linearModels{i};
+        if isfield(results.models,name) && ~isempty(results.models.(name))
+            mdl = results.models.(name);
+            tmp = struct();
+            tmp.Coefficients = mdl.Coefficients.Estimate;
+            tmp.VariableNames = mdl.VariableNames;
+            tmp.Formula = char(mdl.Formula);
+            exportData.(upper(name)) = tmp;
+        end
+    end
+
+    %% ================= REGULARIZED MODELS =================
+    regModels = {'Ridge','Lasso','ElasticNet'};
+    for i = 1:length(regModels)
+        name = regModels{i};
+        if isfield(results.models,name)
+            exportData.(name) = results.models.(name);
+        end
+    end
+
+    %% ================= DECISION TREE =================
+    if isfield(results.models,'tree') && ~isempty(results.models.tree)
         t = results.models.tree;
         treeData = struct();
         treeData.CutPredictor = t.CutPredictor;
@@ -51,39 +49,74 @@ function exportModelsToJson(results, filename)
         treeData.Children = t.Children;
         treeData.NodeMean = t.NodeMean;
         treeData.IsBranchNode = t.IsBranchNode;
+        treeData.NodeSize = t.NodeSize;
         exportData.Tree = treeData;
     end
 
-    % For XGBoost, DNN, native MATLAB objects cannot be directly JSON encoded.
-    % We will save the entire results struct as a .mat file for robust usage,
-    % and a JSON for the simpler weights and trees.
-    
-    % Write to JSON
-    try
-        jsonStr = jsonencode(exportData);
-        fid = fopen(filename, 'w');
-        if fid == -1
-            error('Cannot open file for writing');
+    %% ================= ENSEMBLE =================
+    if isfield(results.models,'Ensemble')
+        ens = results.models.Ensemble;
+        ensData = struct();
+        ensData.NumTrained = ens.NumTrained;
+        ensData.LearnerWeights = ens.TrainedWeights;
+
+        trees = cell(ens.NumTrained,1);
+        for i = 1:ens.NumTrained
+            t = ens.Trained{i};
+            trees{i} = struct( ...
+                'CutPredictor', t.CutPredictor, ...
+                'CutPoint', t.CutPoint, ...
+                'Children', t.Children, ...
+                'NodeMean', t.NodeMean, ...
+                'IsBranchNode', t.IsBranchNode );
         end
-        fprintf(fid, '%s\n', jsonStr);
-        fclose(fid);
-        fprintf('Saved exportable model parameters to JSON: %s\n', filename);
-    catch ME
-        fprintf('Error saving JSON: %s\n', ME.message);
+        ensData.Trees = trees;
+
+        exportData.Ensemble = ensData;
     end
-    
-    % Save as .mat file (most robust for MATLAB models)
-    try
-        % Replace .json with .mat or append .mat if it doesn't have .json
-        if endsWith(filename, '.json')
-            matFilename = strrep(filename, '.json', '.mat');
-        else
-            matFilename = [filename, '.mat'];
+
+    %% ================= XGBOOST =================
+    if isfield(results.models,'XGBoost')
+        xgb = results.models.XGBoost;
+        xgbData = struct();
+        xgbData.NumTrained = xgb.NumTrained;
+        xgbData.LearnerWeights = xgb.TrainedWeights;
+        exportData.XGBoost = xgbData;
+    end
+
+    %% ================= DNN =================
+    if isfield(results.models,'DNN')
+        dnn = results.models.DNN;
+        dnnData = struct();
+
+        layers = dnn.Layers;
+        layerStruct = cell(length(layers),1);
+
+        for i = 1:length(layers)
+            layerStruct{i} = struct( ...
+                'Name', layers(i).Name, ...
+                'Type', class(layers(i)) );
         end
-        models = results.models;
-        save(matFilename, 'models');
-        fprintf('Saved full MATLAB models to standard .mat file: %s\n', matFilename);
-    catch ME
-        fprintf('Error saving MAT: %s\n', ME.message);
+
+        dnnData.Layers = layerStruct;
+        exportData.DNN = dnnData;
     end
+
+    %% ================= METADATA =================
+    exportData.Metadata = struct();
+    exportData.Metadata.Timestamp = datestr(now);
+    exportData.Metadata.Description = ...
+        'Full CKD regression model export with performance metrics';
+
+    %% ================= SAVE JSON =================
+    jsonStr = jsonencode(exportData,'PrettyPrint',true);
+
+    fid = fopen(filename,'w');
+    if fid == -1
+        error('Cannot open file for writing');
+    end
+    fprintf(fid,'%s\n',jsonStr);
+    fclose(fid);
+
+    fprintf('✓ Successfully exported ALL models to JSON: %s\n', filename);
 end
