@@ -11,9 +11,9 @@
     "Scaler": "backend/models/Classifier1/CKD_Scaler.pkl"
   },
   "classifier_2": {
-    "Clinical_Cols": "backend/models/classifier2/2802CKD_Clinical_Cols.pkl",
-    "Model": "backend/models/classifier2/2802CKD_ResNet_XGB_Model.pkl",
-    "Scaler": "backend/models/classifier2/2802CKD_Scaler.pkl"
+    "Clinical_Cols": "backend/models/classifier2/1287CKD_Clinical_Cols.pkl",
+    "Model": "backend/models/classifier2/1287CKD_ResNet_XGB_Model.pkl",
+    "Scaler": "backend/models/classifier2/1287CKD_Scaler.pkl"
   },
   "output": {
     "json": "backend/outputs/EGFR_AllPatients_Predictions.json",

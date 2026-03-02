@@ -21,9 +21,9 @@ C1_COLS_PATH = os.path.join(C1_DIR, "CKD_Clinical_Cols.pkl")
 
 # Classifier 2 Paths (EGFR-Aware Ensemble)
 C2_DIR = os.path.join(MODELS_DIR, "classifier2")
-C2_MODEL_PATH = os.path.join(C2_DIR, "3112CKD_ResNet_XGB_Model.pkl")
-C2_SCALER_PATH = os.path.join(C2_DIR, "31125CKD_Scaler.pkl")
-C2_COLS_PATH = os.path.join(C2_DIR, "3112CKD_Clinical_Cols.pkl")
+C2_MODEL_PATH = os.path.join(C2_DIR, "1287CKD_ResNet_XGB_Model.pkl")
+C2_SCALER_PATH = os.path.join(C2_DIR, "1287CKD_Scaler.pkl")
+C2_COLS_PATH = os.path.join(C2_DIR, "1287CKD_Clinical_Cols.pkl")
 
 # Clinical Features for Normalization
 CLINICAL_FEATURES_LIST = [

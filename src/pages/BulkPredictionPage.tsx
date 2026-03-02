@@ -200,16 +200,36 @@ const BulkPredictionPage = () => {
 
       const handleDownloadCsv = () => {
             if (!predictionResults) return;
-            const csvRows = ['Patient_ID,Predicted_EGFR,CKD_Risk,Classification'];
+            const csvRows = ['Patient_ID,Tree_(eGFR),Classifier1_Result,Classifier2_Result'];
 
             Object.keys(predictionResults).forEach(pid => {
                   const res = predictionResults[pid];
                   const egfrPredicted = res.Predictions?.['Tree'] ?? 'N/A';
                   const egfr = typeof egfrPredicted === 'number' ? egfrPredicted.toFixed(2) : egfrPredicted;
-                  const ckdRisk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
-                  const classification = res.Classifier1?.label || 'N/A';
 
-                  csvRows.push(`${pid},${egfr},${ckdRisk},${classification}`);
+                  const c1Risk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
+                  const c1Label = res.Classifier1?.label || 'N/A';
+
+                  let c2Risk = 'N/A';
+                  let c2Label = 'N/A';
+
+                  if (res.Classifier2) {
+                        if (res.Classifier2['Tree']) {
+                              c2Risk = res.Classifier2['Tree'].probability != null ? `${res.Classifier2['Tree'].probability}%` : 'N/A';
+                              c2Label = res.Classifier2['Tree'].label || 'N/A';
+                        } else {
+                              const firstKey = Object.keys(res.Classifier2)[0];
+                              if (firstKey) {
+                                    c2Risk = res.Classifier2[firstKey].probability != null ? `${res.Classifier2[firstKey].probability}%` : 'N/A';
+                                    c2Label = res.Classifier2[firstKey].label || 'N/A';
+                              }
+                        }
+                  }
+
+                  const c1Formatted = `${c1Label} (${c1Risk})`;
+                  const c2Formatted = `${c2Label} (${c2Risk})`;
+
+                  csvRows.push(`${pid},${egfr},${c1Formatted},${c2Formatted}`);
             });
 
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -467,9 +487,9 @@ const BulkPredictionPage = () => {
                                                 <thead>
                                                       <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Patient ID</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>Predicted EGFR</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>CKD Risk</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>Classification</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Tree (eGFR)</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Classifier 1 Result (Risk%)</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Classifier 2 Result (Risk%)</th>
                                                       </tr>
                                                 </thead>
                                                 <tbody>
@@ -477,25 +497,63 @@ const BulkPredictionPage = () => {
                                                             const res = predictionResults[pid];
                                                             const egfrPredicted = res.Predictions?.['Tree'] ?? 'N/A';
                                                             const egfr = typeof egfrPredicted === 'number' ? egfrPredicted.toFixed(2) : egfrPredicted;
-                                                            const ckdRisk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
-                                                            const classification = res.Classifier1?.label || 'N/A';
+
+                                                            const c1Risk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
+                                                            const c1Label = res.Classifier1?.label || 'N/A';
+
+                                                            let c2Risk = 'N/A';
+                                                            let c2Label = 'N/A';
+
+                                                            if (res.Classifier2) {
+                                                                  if (res.Classifier2['Tree']) {
+                                                                        c2Risk = res.Classifier2['Tree'].probability != null ? `${res.Classifier2['Tree'].probability}%` : 'N/A';
+                                                                        c2Label = res.Classifier2['Tree'].label || 'N/A';
+                                                                  } else {
+                                                                        const firstKey = Object.keys(res.Classifier2)[0];
+                                                                        if (firstKey) {
+                                                                              c2Risk = res.Classifier2[firstKey].probability != null ? `${res.Classifier2[firstKey].probability}%` : 'N/A';
+                                                                              c2Label = res.Classifier2[firstKey].label || 'N/A';
+                                                                        }
+                                                                  }
+                                                            }
 
                                                             return (
                                                                   <tr key={pid} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                                                         <td style={{ padding: '12px', fontWeight: '500' }}>{pid}</td>
                                                                         <td style={{ padding: '12px' }}>{egfr}</td>
-                                                                        <td style={{ padding: '12px' }}>{ckdRisk}</td>
                                                                         <td style={{ padding: '12px' }}>
-                                                                              <span style={{
-                                                                                    padding: '4px 8px',
-                                                                                    borderRadius: '12px',
-                                                                                    fontSize: '13px',
-                                                                                    fontWeight: 'bold',
-                                                                                    backgroundColor: classification.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
-                                                                                    color: classification.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
-                                                                              }}>
-                                                                                    {classification}
-                                                                              </span>
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    {c1Risk !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{c1Risk}</span>}
+                                                                                    {c1Label !== 'N/A' && (
+                                                                                          <span style={{
+                                                                                                padding: '4px 8px',
+                                                                                                borderRadius: '12px',
+                                                                                                fontSize: '13px',
+                                                                                                fontWeight: 'bold',
+                                                                                                backgroundColor: c1Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                                color: c1Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                          }}>
+                                                                                                {c1Label}
+                                                                                          </span>
+                                                                                    )}
+                                                                              </div>
+                                                                        </td>
+                                                                        <td style={{ padding: '12px' }}>
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    {c2Risk !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{c2Risk}</span>}
+                                                                                    {c2Label !== 'N/A' && (
+                                                                                          <span style={{
+                                                                                                padding: '4px 8px',
+                                                                                                borderRadius: '12px',
+                                                                                                fontSize: '13px',
+                                                                                                fontWeight: 'bold',
+                                                                                                backgroundColor: c2Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                                color: c2Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                          }}>
+                                                                                                {c2Label}
+                                                                                          </span>
+                                                                                    )}
+                                                                              </div>
                                                                         </td>
                                                                   </tr>
                                                             );
