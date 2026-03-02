@@ -1,5 +1,0 @@
-Model loaded successfully
-Type: <class 'xgboost.sklearn.XGBClassifier'>
-n_features_in_: 2061
-Booster feature names: None
-Booster num_features: <bound method Booster.num_features of <xgboost.core.Booster object at 0x000001A45AC0B450>>
