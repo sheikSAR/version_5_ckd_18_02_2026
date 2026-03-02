@@ -1,6 +1,7 @@
 clc; clear; close all;
 %filename = "Clinical_data_EGFR_Prediction_161225.xlsx";
-filename = "EFSD_27022026.xlsx";
+%filename = "EFSD_27022026.xlsx";
+filename = "dataset/dataS_predicted_EGFR_Label.xlsx";
 % Create the table with missing data
 T1 = readtable(filename);
 % Replace OHA, HT, and Insulin NANs with 0
@@ -8,10 +9,9 @@ T1.Hypertension(find(isnan(T1.Hypertension))) = 0;
 T1.OHA(find(isnan(T1.OHA))) = 0;
 T1.INSULIN(isnan(T1.INSULIN)) = 0;
 %X1 = table2array(T1(:,1:end));
-T1 = removevars(T1, ...
-    {'RETINALDATE', 'DR_OD', 'DR_OS', 'DME_OS', 'DME_OD', ...
-     'DR_SEVERITY_OD', 'DR_SEVERITY_OS', 'DR_Stage'});
-
+%T1 = removevars(T1, ...
+%    {'RETINALDATE', 'DR_OD', 'DR_OS', 'DME_OS', 'DME_OD', ...
+%     'DR_SEVERITY_OD', 'DR_SEVERITY_OS', 'DR_Stage'});
 y1 = T1.EGFR;
 % NANs
 rowsWithNaN = any(ismissing(T1),2);
@@ -73,4 +73,4 @@ explainCKDModels(results.metrics);
 %[results, finalModel] = CKDModelPipelineAutoEval(X, y, 'CKD_finalModel.mat');
 
 % Export trained models for Backend integration
-exportModelsToJson(results, 'CKD_Exported_Models.json');
+exportModelsToJson(results, 'CKD_Exported_Models_level2.json');

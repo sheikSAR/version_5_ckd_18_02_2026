@@ -54,6 +54,7 @@ const UserPredictionPage = () => {
     useState<PredictionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [predictionProgress, setPredictionProgress] = useState(0);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   // Get userId from localStorage
   useEffect(() => {
@@ -292,6 +293,7 @@ const UserPredictionPage = () => {
           </div>
 
           <PatientInputForm
+            key={formResetKey}
             onSubmit={handlePatientDataSubmit}
           />
         </section>
@@ -450,6 +452,7 @@ const UserPredictionPage = () => {
                 setUploadedImages([]);
                 setPredictionResult(null);
                 setError(null);
+                setFormResetKey(prev => prev + 1);
               }}
             >
               Analyze Another Patient

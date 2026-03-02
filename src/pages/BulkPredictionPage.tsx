@@ -31,6 +31,14 @@ const BulkPredictionPage = () => {
                   navigate('/login');
             } else {
                   setUserId(currentUser);
+                  const savedResults = localStorage.getItem('bulkPredictionResults');
+                  if (savedResults) {
+                        try {
+                              setPredictionResults(JSON.parse(savedResults));
+                        } catch (e) {
+                              console.error('Failed to parse saved bulk predictions', e);
+                        }
+                  }
             }
       }, [navigate]);
 
@@ -114,6 +122,7 @@ const BulkPredictionPage = () => {
             setPredictionProgress(10);
             setError(null);
             setPredictionResults(null);
+            localStorage.removeItem('bulkPredictionResults');
 
             try {
                   // Step 1: Upload and create session
@@ -183,6 +192,7 @@ const BulkPredictionPage = () => {
                   );
 
                   setPredictionResults(predictionsResponse.data);
+                  localStorage.setItem('bulkPredictionResults', JSON.stringify(predictionsResponse.data));
                   setPredictionProgress(100);
 
                   setTimeout(() => {
