@@ -10,6 +10,7 @@ lerna-debug.log*
 # test code and results of Matlab Training
 test
 CKD_Report_*/
+Matlab Training
 
 node_modules
 dist

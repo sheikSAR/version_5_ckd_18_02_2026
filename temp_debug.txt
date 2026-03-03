@@ -1,0 +1,37 @@
+C:\Users\sheik\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\base.py:318: UserWarning: Trying to unpickle estimator StandardScaler from version 1.6.1 when using version 1.2.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\sheik\AppData\Local\Programs\Python\Python311\Lib\site-packages\sklearn\base.py:318: UserWarning: Trying to unpickle estimator StandardScaler from version 1.6.1 when using version 1.2.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+2026-03-03 17:05:14.916278: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE SSE2 SSE3 SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+>>> LOADED PREDICTION.PY WITH ZERO-PADDING FIX <<<
+Loading data...
+Loading Classifier 1...
+Loading Classifier 2...
+Encoding clinical features for classifiers...
+Loading Exported MATLAB JSON Models...
+Found 4 image(s) in images directory
+DEBUG Classifier 2: Running on Regressors: dict_keys(['Tree'])
+DEBUG Classifier 2: Running for Tree with EGFR: 59.66
+DEBUG Lasso: type(model_data)=<class 'list'>, len(model_data)=14, len(X)=14
+DEBUG Lasso first element type=<class 'list'>
+DEBUG Lasso prediction successful: 43.496087289440624
+DEBUG ElasticNet: type(model_data)=<class 'list'>, len(model_data)=14, len(X)=14
+DEBUG ElasticNet first element type=<class 'list'>
+DEBUG ElasticNet prediction successful: 42.53882922394309
+DEBUG Classifier 2: Running on Regressors: dict_keys(['Tree', 'LINEAR', 'ROBUST', 'QUADRATIC', 'Ridge', 'Lasso', 'ElasticNet'])
+DEBUG Classifier 2: Running for Tree with EGFR: 59.52
+DEBUG Classifier 2: Running for LINEAR with EGFR: 56.71
+DEBUG Classifier 2: Running for ROBUST with EGFR: 59.66
+DEBUG Classifier 2: Running for QUADRATIC with EGFR: 55.98
+DEBUG Classifier 2: Running for Ridge with EGFR: 56.7
+DEBUG Classifier 2: Running for Lasso with EGFR: 43.5
+DEBUG Classifier 2: Running for ElasticNet with EGFR: 42.54
+Processed 1/1 patients
+
+COMBINED BATCH PREDICTION COMPLETED
+Patients: 1
+Saved predictions to: user_sessions\user1\session_03_03_2026_15_51_36\output\predictions.json
+Saved patient list to: user_sessions\user1\session_03_03_2026_15_51_36\output\patients.json

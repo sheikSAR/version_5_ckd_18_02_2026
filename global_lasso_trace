@@ -1,0 +1,8 @@
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 43.496087289440624
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 42.53882922394309

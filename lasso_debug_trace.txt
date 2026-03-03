@@ -1,0 +1,1 @@
+\n--- Lasso Prediction ---\ntype(model_data): <class 'list'>, len: 14\nlen(X): 14\nfirst element type: <class 'list'>\nprediction SUCCESS: 43.791348238213345\n

@@ -37,11 +37,13 @@ REGRESSION_MODELS = [
 ]
 
 LEVEL2_REGRESSION_MODELS = [
+    "Tree",
     "LINEAR", 
     "ROBUST", 
     "QUADRATIC", 
-    "Ridge", 
-    "Tree"
+    "Ridge",
+    "Lasso",
+    "ElasticNet"
 ]
 
 # Global ResNet model for classifiers
@@ -139,10 +141,31 @@ def predict_json_model(model_name, model_data, patient_features, is_level2=False
             y_pred = 0.0
 
     elif model_name == "Ridge":
-        # Ridge output is a list of coefficients. First element is intercept.
+        # Ridge output is a flat list of coefficients. First element is intercept.
         if isinstance(model_data, list) and len(model_data) > len(X):
             y_pred = model_data[0] + np.dot(X, model_data[1:])
         else:
+            y_pred = 0.0
+            
+    elif model_name in ["Lasso", "ElasticNet"]:
+        # Lasso and ElasticNet output is typically a list of lists (num_features x num_lambdas).
+        # We assume intercept is 0 since it is not provided natively in the array. 
+        # Pick the least penalized lambda (first element of each coefficient array).
+        with open("global_lasso_trace", "a") as f:
+            f.write(f"In {model_name}. type model_data: {type(model_data)}\n")
+            if isinstance(model_data, list):
+                f.write(f"len model_data: {len(model_data)} len X: {len(X)}\n")
+                if len(model_data) > 0:
+                    f.write(f"type element 0: {type(model_data[0])}\n")
+
+        if isinstance(model_data, list) and len(model_data) == len(X) and isinstance(model_data[0], list):
+            coefs = [float(feat_coefs[0]) if isinstance(feat_coefs, list) else float(feat_coefs) for feat_coefs in model_data]
+            y_pred = np.dot(X, coefs)
+            with open("global_lasso_trace", "a") as f:
+                f.write(f"Success. Prediction: {y_pred}\n")
+        else:
+            with open("global_lasso_trace", "a") as f:
+                f.write(f"Failed condition. Returning 0.0\n")
             y_pred = 0.0
 
     return round(float(y_pred), 2)
@@ -530,6 +553,26 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                         import traceback
                         traceback.print_exc()
                         print(f"Warning: Level 2 JSON Model {model_name} failed: {e}")
+
+        # Run Classifier 2 for all Level 2 regressors
+        if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None:
+            image_paths = []
+            if "image_path" in patient_original and patient_original["image_path"]:
+                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
+            elif "image_paths" in patient_original and patient_original["image_paths"]:
+                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
+            elif discovered_images:
+                image_paths = discovered_images
+
+            level2_c2_result = run_classifier_2(
+                patient_original,
+                list(classifier_2_clinical_cols),
+                classifier_2_model,
+                classifier_2_scaler,
+                predictions_dict,
+                image_paths if image_paths else None
+            )
+            classifier_2_result.update(level2_c2_result)
 
         # Store image information in the entry
         images_used = []
