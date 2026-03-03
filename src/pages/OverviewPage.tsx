@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import UserGraphRenderer from '../components/UserGraphRenderer';
-import { MicroscopeIcon, UserGroup03Icon, Calendar03Icon, PatientIcon } from 'hugeicons-react';
+import { MicroscopeIcon, UserGroup03Icon, Calendar03Icon, PatientIcon, Loading03Icon } from 'hugeicons-react';
 import '../styles/OverviewPage.css';
 
 interface SessionInfo {
@@ -219,7 +219,7 @@ const OverviewPage: React.FC = () => {
             return (
                   <div className="overview-page">
                         <div className="overview-loading">
-                              <span>⏳</span> Loading sessions...
+                              <span><Loading03Icon /></span> Loading sessions...
                         </div>
                   </div>
             );
@@ -270,7 +270,7 @@ const OverviewPage: React.FC = () => {
                                                       <div className="session-patients">
                                                             {loadingPredictions === session.session_id ? (
                                                                   <div className="overview-loading" style={{ padding: '20px' }}>
-                                                                        <span>⏳</span> Loading predictions...
+                                                                        <span><Loading03Icon /></span> Loading predictions...
                                                                   </div>
                                                             ) : selectedAnalysis && selectedAnalysis.sessionId === session.session_id ? (
                                                                   // Show analysis for selected patient
