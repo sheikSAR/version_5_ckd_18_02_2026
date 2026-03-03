@@ -208,6 +208,23 @@ def discover_images(images_dir):
     return image_files
 
 
+def filter_images_for_patient(all_images, patient_id):
+    """
+    Filter images to only include those belonging to a specific patient.
+    Images are matched by checking if the filename starts with the patient ID.
+    e.g., patient_id='EY00425' matches 'EY00425_OD1_30.jpg'
+    """
+    if not all_images or not patient_id:
+        return []
+    
+    pid = str(patient_id).strip()
+    filtered = [
+        img for img in all_images
+        if os.path.basename(img).startswith(pid)
+    ]
+    return filtered
+
+
 def extract_image_features(image_paths):
     """Extract features from one or more images using ResNet50"""
     if not image_paths or len(image_paths) == 0:
@@ -485,6 +502,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 
         # 2. Run Classifier 2 to get Level 1 predicted label (using Level 1 Tree eGFR)
         classifier_2_result = {}
+        level1_classifier2_result = None
         level1_label_num = 0.0 # Default Non-CKD
         if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None and level1_tree_pred is not None:
             image_paths = []
@@ -493,12 +511,12 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             elif "image_paths" in patient_original and patient_original["image_paths"]:
                 image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
             elif discovered_images:
-                image_paths = discovered_images
+                image_paths = filter_images_for_patient(discovered_images, pid)
                 
             # Create a dictionary with just the Tree prediction to pass to C2
             c2_input_preds = {"Tree": level1_tree_pred}
                 
-            classifier_2_result = run_classifier_2(
+            level1_c2_raw = run_classifier_2(
                 patient_original,
                 list(classifier_2_clinical_cols),
                 classifier_2_model,
@@ -507,9 +525,11 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 image_paths if image_paths else None
             )
             
+            # Store Level 1 C2 result separately (don't mix with Level 2 C2)
+            level1_classifier2_result = level1_c2_raw.get("Tree", {})
+            
             # Extract the raw 1.0 or 0.0 output from C2 for the Tree model
-            c2_tree_res = classifier_2_result.get("Tree", {})
-            c2_label_str = c2_tree_res.get("label", "Non-CKD")
+            c2_label_str = level1_classifier2_result.get("label", "Non-CKD")
             level1_label_num = 1.0 if c2_label_str == "CKD" else 0.0
 
         # Run Classifier 1 (Independent)
@@ -521,7 +541,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             elif "image_paths" in patient_original and patient_original["image_paths"]:
                 image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
             elif discovered_images:
-                image_paths = discovered_images
+                image_paths = filter_images_for_patient(discovered_images, pid)
 
             classifier_1_result = run_classifier_1(
                 patient_original,
@@ -562,7 +582,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             elif "image_paths" in patient_original and patient_original["image_paths"]:
                 image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
             elif discovered_images:
-                image_paths = discovered_images
+                image_paths = filter_images_for_patient(discovered_images, pid)
 
             level2_c2_result = run_classifier_2(
                 patient_original,
@@ -572,16 +592,20 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 predictions_dict,
                 image_paths if image_paths else None
             )
-            classifier_2_result.update(level2_c2_result)
+            # Level 2 C2 results go directly into classifier_2_result (no mixing with Level 1)
+            classifier_2_result = level2_c2_result
 
-        # Store image information in the entry
+        # Store image information in the entry (only patient-specific images)
         images_used = []
         if discovered_images:
-            images_used = [os.path.basename(img) for img in discovered_images]
+            patient_images = filter_images_for_patient(discovered_images, pid)
+            images_used = [os.path.basename(img) for img in patient_images]
 
         entry = {
             "Patient_ID": pid,
             "Actual_EGFR": actual,
+            "Level1_Tree_EGFR": level1_tree_pred,
+            "Level1_Classifier2": level1_classifier2_result,
             "Predictions": predictions_dict,
             "Errors": errors_dict,
             "Classifier1": classifier_1_result,
@@ -606,6 +630,11 @@ def run(config_path: str) -> List[Dict[str, Any]]:
                 if entry["Actual_EGFR"] is not None
                 else None
             ),
+            "Level1_Tree_EGFR": (
+                round(float(entry["Level1_Tree_EGFR"]), 2)
+                if entry.get("Level1_Tree_EGFR") is not None
+                else None
+            ),
             "Predictions": {k: float(v) for k, v in entry["Predictions"].items()},
             "Errors": (
                 {k: float(v) for k, v in entry["Errors"].items()}
@@ -624,7 +653,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         else:
             converted_entry["Classifier1"] = {"label": "Not Available", "probability": 0.0}
 
-        # Map Classifier 2 results using the newly computed predictions
+        # Map Classifier 2 results (Level 2 only)
         if "Classifier2" in entry and entry["Classifier2"]:
             c2_out = {}
             for model_lbl, c2_data in entry["Classifier2"].items():
@@ -635,6 +664,16 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             converted_entry["Classifier2"] = c2_out
         else:
             converted_entry["Classifier2"] = {}
+
+        # Add Level 1 Classifier 2 result
+        if entry.get("Level1_Classifier2"):
+            l1c2 = entry["Level1_Classifier2"]
+            converted_entry["Level1_Classifier2"] = {
+                "label": l1c2.get("label", "Not Available"),
+                "probability": float(l1c2.get("probability", 0.0))
+            }
+        else:
+            converted_entry["Level1_Classifier2"] = None
 
         # Add images information
         if entry.get("Images_Used"):

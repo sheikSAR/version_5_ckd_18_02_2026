@@ -34,6 +34,8 @@ interface PatientData {
 
 interface PredictionResult {
   Patient_ID: string;
+  Level1_Tree_EGFR?: number | null;
+  Level1_Classifier2?: { label: string; probability: number } | null;
   Predictions: Record<string, number>;
   Classifier1: {
     label: string;
@@ -421,26 +423,149 @@ const UserPredictionPage = () => {
                 predictions={predictionResult.Predictions}
                 classifier1={predictionResult.Classifier1}
                 classifier2={predictionResult.Classifier2}
+                level1TreeEgfr={predictionResult.Level1_Tree_EGFR ?? undefined}
+                level1Classifier2={predictionResult.Level1_Classifier2 ?? undefined}
               />
             </div>
 
             <div className="prediction-summary">
               <h3>Prediction Summary</h3>
-              <div className="summary-grid">
-                <div className="summary-item">
-                  <label>Classifier 1 (Clinical + Image Pooling)</label>
-                  <div className="summary-value">
-                    <span className="label">
-                      {predictionResult.Classifier1.label}
-                    </span>
-                    <span className="probability">
-                      {(predictionResult.Classifier1.probability < 50
-                        ? 100 - predictionResult.Classifier1.probability
-                        : predictionResult.Classifier1.probability).toFixed(1)}
-                      %
-                    </span>
-                  </div>
-                </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Component</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Predicted eGFR</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>CKD Risk</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Classification</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Classifier 1 Row */}
+                    {(() => {
+                      const c1 = predictionResult.Classifier1;
+                      const isCKD = c1.label?.toLowerCase() === 'ckd';
+                      const prob = c1.probability < 50 ? 100 - c1.probability : c1.probability;
+                      return (
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Classifier 1</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#94a3b8' }}>—</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
+                            {prob.toFixed(1)}%
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 14px',
+                              borderRadius: '20px',
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              backgroundColor: isCKD ? '#fee2e2' : '#dcfce7',
+                              color: isCKD ? '#b91c1c' : '#15803d'
+                            }}>
+                              {c1.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
+
+                    {/* Level 1 Tree Row */}
+                    {predictionResult.Level1_Tree_EGFR != null && (() => {
+                      const egfr = predictionResult.Level1_Tree_EGFR!;
+                      const isCKD = egfr < 60;
+                      return (
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Level 1 Tree</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>
+                            {egfr.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#94a3b8' }}>—</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 14px',
+                              borderRadius: '20px',
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              backgroundColor: isCKD ? '#fee2e2' : '#dcfce7',
+                              color: isCKD ? '#b91c1c' : '#15803d'
+                            }}>
+                              {isCKD ? 'CKD' : 'Non-CKD'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
+
+                    {/* Level 1 Tree + C2 Row */}
+                    {predictionResult.Level1_Classifier2 != null && (() => {
+                      const l1c2 = predictionResult.Level1_Classifier2!;
+                      const isCKD = l1c2.label?.toLowerCase() === 'ckd';
+                      return (
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Level 1 Tree + C2</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>
+                            {predictionResult.Level1_Tree_EGFR?.toFixed(2) ?? '—'}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
+                            {l1c2.probability}%
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 14px',
+                              borderRadius: '20px',
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              backgroundColor: isCKD ? '#fee2e2' : '#dcfce7',
+                              color: isCKD ? '#b91c1c' : '#15803d'
+                            }}>
+                              {l1c2.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
+
+                    {/* Separator row */}
+                    {predictionResult.Predictions && Object.keys(predictionResult.Predictions).length > 0 && (
+                      <tr>
+                        <td colSpan={4} style={{ padding: '6px 16px', fontSize: '12px', color: '#64748b', fontWeight: '600', backgroundColor: '#f1f5f9', letterSpacing: '0.5px' }}>
+                          LEVEL 2 REGRESSORS → CLASSIFIER 2
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Level 2 Model Rows */}
+                    {predictionResult.Predictions && Object.entries(predictionResult.Predictions).map(([modelName, egfrValue]) => {
+                      const c2Result = predictionResult.Classifier2?.[modelName];
+                      const isCKD = c2Result?.label?.toLowerCase() === 'ckd';
+                      return (
+                        <tr key={modelName} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>{modelName}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>
+                            {typeof egfrValue === 'number' ? egfrValue.toFixed(2) : egfrValue}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
+                            {c2Result ? `${c2Result.probability}%` : 'N/A'}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            {c2Result ? (
+                              <span style={{
+                                padding: '4px 14px',
+                                borderRadius: '20px',
+                                fontSize: '13px',
+                                fontWeight: 'bold',
+                                backgroundColor: isCKD ? '#fee2e2' : '#dcfce7',
+                                color: isCKD ? '#b91c1c' : '#15803d'
+                              }}>
+                                {c2Result.label}
+                              </span>
+                            ) : 'N/A'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 

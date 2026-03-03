@@ -2,6 +2,7 @@ import { useState } from 'react';
 import UserNavbar from '../components/UserNavbar';
 import UserPredictionPage from './UserPredictionPage';
 import BulkPredictionPage from './BulkPredictionPage';
+import OverviewPage from './OverviewPage';
 import { MicroscopeIcon, DashboardSquare01Icon, FolderUploadIcon } from 'hugeicons-react';
 import '../styles/SimplePage.css';
 
@@ -44,13 +45,8 @@ const UserPage = () => {
         {/* Main Content Area */}
         <main className="dashboard-main-content">
           {activeTab === 'overview' && (
-            <div className="overview-content">
-              <div className="welcome-section">
-                <p className="welcome-text">Welcome to the CKD Prediction System</p>
-                <p className="welcome-subtitle">
-                  Select a tool from the sidebar to begin analyzing patient records.
-                </p>
-              </div>
+            <div className="prediction-view">
+              <OverviewPage />
             </div>
           )}
           {activeTab === 'prediction' && (

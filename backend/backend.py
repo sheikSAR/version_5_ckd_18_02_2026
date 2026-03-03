@@ -326,6 +326,72 @@ def get_patients_list(config_path):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/user-sessions/<user_id>/list-sessions", methods=["GET"])
+def list_user_sessions(user_id):
+    """List all sessions for a user with metadata, sorted by date (newest first)."""
+    try:
+        user_path = os.path.join(USER_SESSIONS_DIR, user_id)
+
+        if not os.path.exists(user_path):
+            return jsonify({"success": True, "sessions": []}), 200
+
+        sessions = []
+        for folder_name in os.listdir(user_path):
+            folder_path = os.path.join(user_path, folder_name)
+            if not os.path.isdir(folder_path):
+                continue
+
+            metadata_path = os.path.join(folder_path, "metadata.json")
+            predictions_path = os.path.join(folder_path, "output", "predictions.json")
+
+            session_info = {
+                "session_id": folder_name,
+                "is_bulk": folder_name.startswith("session_bulk_"),
+                "has_predictions": os.path.exists(predictions_path),
+                "created_at": None,
+                "patient_count": 0,
+            }
+
+            # Load metadata if available
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, "r") as f:
+                        meta = json.load(f)
+                    session_info["created_at"] = meta.get("created_at")
+                    session_info["patient_count"] = meta.get("patient_count", 0)
+                except Exception:
+                    pass
+
+            # If no created_at from metadata, parse from folder name
+            if not session_info["created_at"]:
+                try:
+                    # Parse from session_DD_MM_YYYY_HH_MM_SS or session_bulk_DD_MM_YYYY_HH_MM_SS
+                    parts = folder_name.replace("session_bulk_", "").replace("session_", "")
+                    dt = datetime.strptime(parts, "%d_%m_%Y_%H_%M_%S")
+                    session_info["created_at"] = dt.isoformat()
+                except Exception:
+                    session_info["created_at"] = ""
+
+            # If patient_count is 0 but predictions exist, count from predictions
+            if session_info["patient_count"] == 0 and session_info["has_predictions"]:
+                try:
+                    with open(predictions_path, "r") as f:
+                        preds = json.load(f)
+                    session_info["patient_count"] = len(preds)
+                except Exception:
+                    pass
+
+            sessions.append(session_info)
+
+        # Sort by created_at descending (newest first)
+        sessions.sort(key=lambda s: s.get("created_at", ""), reverse=True)
+
+        return jsonify({"success": True, "sessions": sessions}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+
 @app.route("/user-sessions/create-session", methods=["POST"])
 def create_user_session():
     """

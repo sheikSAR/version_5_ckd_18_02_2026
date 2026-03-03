@@ -504,8 +504,9 @@ const BulkPredictionPage = () => {
                                                 <thead>
                                                       <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Patient ID</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>Tree (eGFR)</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>Classifier 1 Risk</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Classifier 1</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>L1 Tree eGFR</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>L1 Tree + C2</th>
                                                             {(() => {
                                                                   const pids = Object.keys(predictionResults);
                                                                   if (pids.length > 0) {
@@ -514,7 +515,7 @@ const BulkPredictionPage = () => {
                                                                               return Object.keys(sampleRes.Classifier2).map(modelName => (
                                                                                     <React.Fragment key={modelName}>
                                                                                           <th style={{ padding: '12px', color: '#475569' }}>{modelName} eGFR</th>
-                                                                                          <th style={{ padding: '12px', color: '#475569' }}>C2 Risk ({modelName})</th>
+                                                                                          <th style={{ padding: '12px', color: '#475569' }}>C2 ({modelName})</th>
                                                                                     </React.Fragment>
                                                                               ));
                                                                         }
@@ -526,11 +527,18 @@ const BulkPredictionPage = () => {
                                                 <tbody>
                                                       {Object.keys(predictionResults).map((pid) => {
                                                             const res = predictionResults[pid];
-                                                            const egfrPredicted = res.Predictions?.['Tree'] ?? 'N/A';
-                                                            const egfr = typeof egfrPredicted === 'number' ? egfrPredicted.toFixed(2) : egfrPredicted;
 
                                                             const c1Risk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
                                                             const c1Label = res.Classifier1?.label || 'N/A';
+
+                                                            // Level 1 Tree eGFR
+                                                            const l1Egfr = (res as any).Level1_Tree_EGFR;
+                                                            const l1EgfrStr = l1Egfr != null ? Number(l1Egfr).toFixed(2) : 'N/A';
+
+                                                            // Level 1 C2
+                                                            const l1c2 = (res as any).Level1_Classifier2;
+                                                            const l1c2Label = l1c2?.label || 'N/A';
+                                                            const l1c2Prob = l1c2?.probability != null ? `${l1c2.probability}%` : 'N/A';
 
                                                             // Get the dynamic keys to render each cell below
                                                             let c2Keys: string[] = [];
@@ -541,7 +549,6 @@ const BulkPredictionPage = () => {
                                                             return (
                                                                   <tr key={pid} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                                                         <td style={{ padding: '12px', fontWeight: '500' }}>{pid}</td>
-                                                                        <td style={{ padding: '12px' }}>{egfr}</td>
                                                                         <td style={{ padding: '12px' }}>
                                                                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                                     {c1Risk !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{c1Risk}</span>}
@@ -555,6 +562,25 @@ const BulkPredictionPage = () => {
                                                                                                 color: c1Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
                                                                                           }}>
                                                                                                 {c1Label}
+                                                                                          </span>
+                                                                                    )}
+                                                                              </div>
+                                                                        </td>
+
+                                                                        <td style={{ padding: '12px', color: '#0369a1', fontWeight: '600' }}>{l1EgfrStr}</td>
+                                                                        <td style={{ padding: '12px' }}>
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    {l1c2Prob !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{l1c2Prob}</span>}
+                                                                                    {l1c2Label !== 'N/A' && (
+                                                                                          <span style={{
+                                                                                                padding: '4px 8px',
+                                                                                                borderRadius: '12px',
+                                                                                                fontSize: '13px',
+                                                                                                fontWeight: 'bold',
+                                                                                                backgroundColor: l1c2Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                                color: l1c2Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                          }}>
+                                                                                                {l1c2Label}
                                                                                           </span>
                                                                                     )}
                                                                               </div>
