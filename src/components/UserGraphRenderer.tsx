@@ -8,6 +8,8 @@ interface UserGraphRendererProps {
     probability: number;
   };
   classifier2?: Record<string, { label: string; probability: number }>;
+  level1TreeEgfr?: number;
+  level1Classifier2?: { label: string; probability: number };
 }
 
 interface NodeData {
@@ -74,6 +76,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
   predictions,
   classifier1,
   classifier2,
+  level1TreeEgfr,
+  level1Classifier2,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -109,18 +113,29 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
     // Define Grid Columns
     const colX = {
-      patient: width * 0.06,
-      level1_reg: width * 0.25,
+      patient: width * 0.08,
+      level1: width * 0.27,
       level1_c2: width * 0.45,
-      level2_reg: width * 0.65,
-      level2_c2: width * 0.82,
-      outcomes: width * 0.95,
+      level2_reg: width * 0.60,
+      level2_c2: width * 0.77,
+      outcomes: width * 0.93,
     };
 
     const nodes: NodeData[] = [];
     const edges: EdgeData[] = [];
 
-    // 1. Patient Node (Root)
+    // All models in predictions are Level 2
+    const level2Keys = Object.keys(predictions);
+    const hasLevel1Tree = level1TreeEgfr != null;
+    // Use dedicated level1Classifier2 prop, or fall back to classifier2['Tree'] for old data
+    const treeC2Data = level1Classifier2 ?? (classifier2 && classifier2['Tree']) ?? null;
+    const hasTreeC2 = hasLevel1Tree && treeC2Data != null;
+
+    // Total rows: Classifier 1 + Level 1 Tree + (Level 1 C2 if exists) + Level 2 models
+    const totalRows = 1 + (hasLevel1Tree ? 1 : 0) + (hasTreeC2 ? 1 : 0) + level2Keys.length;
+    const rowStep = height / (totalRows + 1);
+
+    // 1. Patient Node (Root) — vertically centered
     const patientY = height * 0.5;
     nodes.push({
       id: 'patient',
@@ -132,14 +147,6 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       color: '#2d3748',
     });
 
-    const modelKeys = Object.keys(predictions);
-    const treeKey = modelKeys.find((k) => k.toLowerCase() === 'tree');
-    const level2Keys = modelKeys.filter((k) => k.toLowerCase() !== 'tree');
-
-    const hasTreeC2 = treeKey && classifier2 && classifier2[treeKey];
-    const totalRows = 1 + (treeKey ? (hasTreeC2 ? 2 : 1) : 0) + level2Keys.length;
-    const rowStep = height / (totalRows + 1);
-
     let currentRow = 1;
 
     // --- ROW 1: Classifier 1 ---
@@ -147,7 +154,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     nodes.push({
       id: 'classifier1',
       type: 'classifier1',
-      x: colX.level1_reg,
+      x: colX.level1,
       y: c1Y,
       radius: 50,
       label: 'Classifier 1\n(Clinical + Img)',
@@ -184,16 +191,16 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     let treeRegId = '';
     let treeC2Id = '';
 
-    // --- ROW 2 & 3: Tree Regressor and Classifier 2 (Tree) ---
-    if (treeKey) {
+    // --- ROW 2: Level 1 Tree Regressor ---
+    if (hasLevel1Tree) {
       const treeY = rowStep * currentRow++;
-      treeRegId = `regressor-tree`;
-      const treePrediction = predictions[treeKey] || 0;
+      treeRegId = 'regressor-tree';
+      const treePrediction = level1TreeEgfr!;
 
       nodes.push({
         id: treeRegId,
         type: 'regressor',
-        x: colX.level1_reg,
+        x: colX.level1,
         y: treeY,
         radius: 45,
         label: `Level 1 Tree\nReg`,
@@ -210,7 +217,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
       const isCKD = treePrediction < 60;
       nodes.push({
-        id: `reg-outcome-tree`,
+        id: 'reg-outcome-tree',
         type: 'outcome',
         x: colX.outcomes,
         y: treeY,
@@ -220,17 +227,18 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       });
       edges.push({
         from: treeRegId,
-        to: `reg-outcome-tree`,
+        to: 'reg-outcome-tree',
         type: 'regressor-outcome',
         progress: 0,
         label: `predict eGFR: ${treePrediction}`,
         color: '#10b981',
       });
 
+      // --- ROW 3: Level 1 C2 (Tree label) ---
       if (hasTreeC2) {
         const treeC2Y = rowStep * currentRow++;
-        const c2Result = classifier2![treeKey];
-        treeC2Id = `classifier2-tree`;
+        const c2Result = treeC2Data!;
+        treeC2Id = 'classifier2-tree-l1';
 
         nodes.push({
           id: treeC2Id,
@@ -252,7 +260,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
         const c2Confidence = c2Result.probability < 50 ? 100 - c2Result.probability : c2Result.probability;
         nodes.push({
-          id: `c2-outcome-tree`,
+          id: 'c2-outcome-tree',
           type: 'outcome',
           x: colX.outcomes,
           y: treeC2Y,
@@ -262,7 +270,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         });
         edges.push({
           from: treeC2Id,
-          to: `c2-outcome-tree`,
+          to: 'c2-outcome-tree',
           type: 'classifier2-outcome',
           progress: 0,
           color: '#d69e2e',
@@ -270,13 +278,12 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       }
     }
 
-    // --- ROWS 4..N: Level 2 Regressors ---
+    // --- ROWS 4..N: Level 2 Regressors (ALL models in predictions, including Tree) ---
     level2Keys.forEach((modelName, idx) => {
-      const i = idx + 1; // Use color shifting from 1 to avoid overlap with Tree
-      const color = getModelEdgeColor(i);
+      const color = getModelEdgeColor(idx);
       const l2Y = rowStep * currentRow++;
 
-      const regressorId = `regressor-${modelName}`;
+      const regressorId = `regressor-l2-${modelName}`;
       const regPrediction = predictions[modelName] || 0;
 
       nodes.push({
@@ -288,7 +295,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         label: `L2 ${modelName}`,
         value: regPrediction,
         color: color,
-        modelIndex: i,
+        modelIndex: idx,
       });
 
       // Show edge from Tree Regressor if exists
@@ -330,7 +337,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       const hasC2 = classifier2 && classifier2[modelName];
       if (hasC2) {
         const c2Result = classifier2[modelName];
-        const c2Id = `classifier2-${modelName}`;
+        const c2Id = `classifier2-l2-${modelName}`;
 
         nodes.push({
           id: c2Id,
@@ -339,7 +346,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           y: l2Y,
           radius: 38,
           label: `C2\n(${modelName})`,
-          color: color, // Inherit color of its level 2 model
+          color: color,
         });
 
         edges.push({
@@ -351,7 +358,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           color: color,
         });
 
-        const outId = `c2-outcome-${modelName}`;
+        const outId = `c2-outcome-l2-${modelName}`;
         const c2Confidence = c2Result.probability < 50 ? 100 - c2Result.probability : c2Result.probability;
         nodes.push({
           id: outId,
@@ -395,7 +402,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     });
 
     animationStateRef.current = newState;
-  }, [patientId, predictions, classifier1, classifier2]);
+  }, [patientId, predictions, classifier1, classifier2, level1TreeEgfr, level1Classifier2]);
 
   const updateAnimation = useCallback(
     (elapsed: number) => {
@@ -423,36 +430,34 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       s.edgesProgress['regressor-tree-reg-outcome-tree'] = Math.min(Math.max(0, elapsed - l1OutStart) / 300, 1);
       s.outcomeNodesAlpha['reg-outcome-tree'] = Math.min(Math.max(0, elapsed - (l1OutStart + 300)) / 300, 1);
 
-      // Tree C2 timings
+      // Tree C2 timings (using the new l1 suffix)
       const c2TreeStart = l1NodeStart + 300;
-      s.edgesProgress['regressor-tree-classifier2-tree'] = Math.min(Math.max(0, elapsed - c2TreeStart) / 400, 1);
+      s.edgesProgress['regressor-tree-classifier2-tree-l1'] = Math.min(Math.max(0, elapsed - c2TreeStart) / 400, 1);
       const c2TreeNodeStart = c2TreeStart + 400;
-      s.classifier2NodesAlpha['classifier2-tree'] = Math.min(Math.max(0, elapsed - c2TreeNodeStart) / 300, 1);
+      s.classifier2NodesAlpha['classifier2-tree-l1'] = Math.min(Math.max(0, elapsed - c2TreeNodeStart) / 300, 1);
 
       const c2TreeOutStart = c2TreeNodeStart + 300;
-      s.edgesProgress['classifier2-tree-c2-outcome-tree'] = Math.min(Math.max(0, elapsed - c2TreeOutStart) / 300, 1);
+      s.edgesProgress['classifier2-tree-l1-c2-outcome-tree'] = Math.min(Math.max(0, elapsed - c2TreeOutStart) / 300, 1);
       s.outcomeNodesAlpha['c2-outcome-tree'] = Math.min(Math.max(0, elapsed - (c2TreeOutStart + 300)) / 300, 1);
 
-      // Level 2 Regressors timings
-      // They fire after the C2 Tree is ready
+      // Level 2 Regressors timings (ALL models in predictions, including Tree)
       const l2Start = c2TreeNodeStart + 100;
 
       Object.keys(predictions).forEach((modelName) => {
-        if (modelName.toLowerCase() === 'tree') return;
-        const regId = `regressor-${modelName}`;
+        const regId = `regressor-l2-${modelName}`;
 
         // Input edges to Level 2
         s.edgesProgress[`regressor-tree-${regId}`] = Math.min(Math.max(0, elapsed - l2Start) / 400, 1);
-        s.edgesProgress[`classifier2-tree-${regId}`] = Math.min(Math.max(0, elapsed - l2Start) / 400, 1);
-        s.edgesProgress[`patient-${regId}`] = Math.min(Math.max(0, elapsed - l2Start) / 400, 1); // fallback
+        s.edgesProgress[`classifier2-tree-l1-${regId}`] = Math.min(Math.max(0, elapsed - l2Start) / 400, 1);
+        s.edgesProgress[`patient-${regId}`] = Math.min(Math.max(0, elapsed - l2Start) / 400, 1);
 
         const l2NodeStart = l2Start + 400;
         s.regressorNodesAlpha[regId] = Math.min(Math.max(0, elapsed - l2NodeStart) / 300, 1);
 
         const hasC2 = classifier2 && classifier2[modelName];
         if (hasC2) {
-          const c2Id = `classifier2-${modelName}`;
-          const outId = `c2-outcome-${modelName}`;
+          const c2Id = `classifier2-l2-${modelName}`;
+          const outId = `c2-outcome-l2-${modelName}`;
 
           const l2c2Start = l2NodeStart + 300;
           s.edgesProgress[`${regId}-${c2Id}`] = Math.min(Math.max(0, elapsed - l2c2Start) / 300, 1);
@@ -638,9 +643,10 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         const { parentElement } = canvasRef.current;
         if (parentElement) {
           canvasRef.current.width = parentElement.clientWidth;
-          // Height calculation (dynamic based on Regressors)
+          // Height calculation (dynamic based on total rows)
           const numRegressors = Object.keys(predictions).length;
-          const height = Math.max(600, numRegressors * 80 + 200);
+          const totalRows = 1 + (level1TreeEgfr != null ? 1 : 0) + 1 + numRegressors; // C1 + L1Tree + L1C2 + L2 models
+          const height = Math.max(700, totalRows * 110 + 200);
           canvasRef.current.height = height;
           calculateLayout();
         }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import UserGraphRenderer from '../components/UserGraphRenderer';
+import { MicroscopeIcon, UserGroup03Icon, Calendar03Icon, PatientIcon } from 'hugeicons-react';
 import '../styles/OverviewPage.css';
 
 interface SessionInfo {
@@ -247,15 +248,15 @@ const OverviewPage: React.FC = () => {
                                                 {/* Card header */}
                                                 <div className="session-card-header" onClick={() => handleToggleSession(session.session_id)}>
                                                       <div className={`session-type-badge ${session.is_bulk ? 'bulk' : 'single'}`}>
-                                                            {session.is_bulk ? '📦' : '🔬'}
+                                                            {session.is_bulk ? <UserGroup03Icon size={20} /> : <MicroscopeIcon size={20} />}
                                                       </div>
                                                       <div className="session-info">
                                                             <div className="session-title">
                                                                   {session.is_bulk ? 'Bulk Prediction' : 'Single Patient Prediction'}
                                                             </div>
                                                             <div className="session-meta">
-                                                                  <span>📅 {formatDate(session.created_at)}</span>
-                                                                  <span>👤 {session.patient_count} patient{session.patient_count !== 1 ? 's' : ''}</span>
+                                                                  <span><Calendar03Icon size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />{formatDate(session.created_at)}</span>
+                                                                  <span><PatientIcon size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />{session.patient_count} patient{session.patient_count !== 1 ? 's' : ''}</span>
                                                             </div>
                                                       </div>
                                                       {!session.has_predictions && (
@@ -294,7 +295,7 @@ const OverviewPage: React.FC = () => {
                                                                         ) : (
                                                                               patientIds.map(pid => (
                                                                                     <div key={pid} className="patient-row">
-                                                                                          <span className="patient-id">🏥 {pid}</span>
+                                                                                          <span className="patient-id"><PatientIcon size={16} style={{ verticalAlign: 'middle', marginRight: '6px' }} />{pid}</span>
                                                                                           <button
                                                                                                 className="show-analysis-btn"
                                                                                                 onClick={() => setSelectedAnalysis({ sessionId: session.session_id, patientId: pid })}
