@@ -332,7 +332,7 @@ def run_classifier_2(patient, clinical_columns, model, scaler, egfr_predictions,
         # Baseline clinical subset
         patient_subset = {}
         for k in clinical_columns:
-            if k in patient and k != "Predicted_EGFR":
+            if k in patient and k not in ["Predicted_EGFR", "predicted eGFR"]:
                 val = patient.get(k, 0.0)
                 if k == "gender" and isinstance(val, str):
                     if val.upper() == "F":
@@ -354,7 +354,8 @@ def run_classifier_2(patient, clinical_columns, model, scaler, egfr_predictions,
             try:
                 # Add the specific EGFR prediction into the feature list
                 temp_subset = patient_subset.copy()
-                temp_subset["Predicted_EGFR"] = float(egfr_val)
+                temp_subset["predicted eGFR"] = float(egfr_val) # For 1287CKD model
+                temp_subset["Predicted_EGFR"] = float(egfr_val) # Legacy support
                 
                 patient_df = pd.DataFrame([temp_subset])
                 
