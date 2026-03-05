@@ -165,7 +165,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       to: 'classifier1',
       type: 'patient-classifier1',
       progress: 0,
-      label: 'Clinical + Images',
+      // label: 'Clinical + Images',
       color: '#e53e3e',
     });
 
