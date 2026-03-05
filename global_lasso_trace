@@ -198,3 +198,147 @@ In ElasticNet. type model_data: <class 'list'>
 len model_data: 14 len X: 14
 type element 0: <class 'list'>
 Success. Prediction: 57.99907173388178
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 42.333060007926754
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 41.48048298294283
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 37.457109672243895
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 36.469435394500586
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 22.440055378170733
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 21.686223380219488
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 43.90810996846173
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 42.9719292026909
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 90.91506624088024
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 91.56849873738184
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 90.91506624088024
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 91.56849873738184
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 90.91506624088024
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 91.56849873738184
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 90.91506624088024
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 91.56849873738184
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 15.31642020146299
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 14.617171593176385
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 15.31642020146299
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 14.617171593176385
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 43.496087289440624
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 42.53882922394309
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 56.09425813780644
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 55.40266632687921
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 90.91506624088024
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 91.56849800428898
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 15.31642020146299
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 14.617171593176385

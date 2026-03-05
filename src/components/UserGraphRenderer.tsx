@@ -196,6 +196,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       const treeY = rowStep * currentRow++;
       treeRegId = 'regressor-tree';
       const treePrediction = level1TreeEgfr!;
+      const isTreeAbnormal = treePrediction < 0;
+      const treeNodeColor = isTreeAbnormal ? '#d1d5db' : '#10b981';
 
       nodes.push({
         id: treeRegId,
@@ -205,14 +207,14 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         radius: 45,
         label: `Level 1 Tree\nReg`,
         value: treePrediction,
-        color: '#10b981',
+        color: treeNodeColor,
       });
       edges.push({
         from: 'patient',
         to: treeRegId,
         type: 'patient-regressor',
         progress: 0,
-        color: '#10b981',
+        color: treeNodeColor,
       });
 
       const isCKD = treePrediction < 60;
@@ -222,16 +224,16 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         x: colX.outcomes,
         y: treeY,
         radius: 38,
-        label: `${isCKD ? 'CKD' : 'NON-CKD'}\neGFR: ${treePrediction}`,
-        color: isCKD ? '#c53030' : '#2f855a',
+        label: isTreeAbnormal ? '' : `${isCKD ? 'CKD' : 'NON-CKD'}\neGFR: ${treePrediction}`,
+        color: isTreeAbnormal ? '#d1d5db' : (isCKD ? '#c53030' : '#2f855a'),
       });
       edges.push({
         from: treeRegId,
         to: 'reg-outcome-tree',
         type: 'regressor-outcome',
         progress: 0,
-        label: `predict eGFR: ${treePrediction}`,
-        color: '#10b981',
+        label: isTreeAbnormal ? '' : `predict eGFR: ${treePrediction}`,
+        color: treeNodeColor,
       });
 
       // --- ROW 3: Level 1 C2 (Tree label) ---
@@ -239,6 +241,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         const treeC2Y = rowStep * currentRow++;
         const c2Result = treeC2Data!;
         treeC2Id = 'classifier2-tree-l1';
+        const c2NodeColor = isTreeAbnormal ? '#d1d5db' : '#d69e2e';
 
         nodes.push({
           id: treeC2Id,
@@ -246,16 +249,16 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           x: colX.level1_c2,
           y: treeC2Y,
           radius: 45,
-          label: `Level 1 C2\n(Tree label)`,
-          color: '#d69e2e',
+          label: isTreeAbnormal ? `Level 1 C2` : `Level 1 C2\n(Tree label)`,
+          color: c2NodeColor,
         });
         edges.push({
           from: treeRegId,
           to: treeC2Id,
           type: 'regressor-classifier2',
           progress: 0,
-          label: `eGFR: ${treePrediction}`,
-          color: '#d69e2e',
+          label: isTreeAbnormal ? '' : `eGFR: ${treePrediction}`,
+          color: c2NodeColor,
         });
 
         const c2Confidence = c2Result.probability < 50 ? 100 - c2Result.probability : c2Result.probability;
@@ -265,15 +268,15 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           x: colX.outcomes,
           y: treeC2Y,
           radius: 38,
-          label: `${c2Result.label}\n${c2Confidence.toFixed(1)}%`,
-          color: c2Result.label === 'CKD' ? '#c53030' : '#2f855a',
+          label: isTreeAbnormal ? '' : `${c2Result.label}\n${c2Confidence.toFixed(1)}%`,
+          color: isTreeAbnormal ? '#d1d5db' : (c2Result.label === 'CKD' ? '#c53030' : '#2f855a'),
         });
         edges.push({
           from: treeC2Id,
           to: 'c2-outcome-tree',
           type: 'classifier2-outcome',
           progress: 0,
-          color: '#d69e2e',
+          color: c2NodeColor,
         });
       }
     }
@@ -285,6 +288,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
       const regressorId = `regressor-l2-${modelName}`;
       const regPrediction = predictions[modelName] || 0;
+      const isAbnormal = regPrediction < 0;
+      const nodeColor = isAbnormal ? '#d1d5db' : color;
 
       nodes.push({
         id: regressorId,
@@ -294,7 +299,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
         radius: 40,
         label: `L2 ${modelName}`,
         value: regPrediction,
-        color: color,
+        color: nodeColor,
         modelIndex: idx,
       });
 
@@ -306,7 +311,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           type: 'patient-regressor',
           progress: 0,
           label: `eGFR`,
-          color: color,
+          color: nodeColor,
         });
       }
 
@@ -318,7 +323,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           type: 'patient-regressor',
           progress: 0,
           label: `label`,
-          color: color,
+          color: nodeColor,
         });
       }
 
@@ -329,7 +334,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           to: regressorId,
           type: 'patient-regressor',
           progress: 0,
-          color: color,
+          color: nodeColor,
         });
       }
 
@@ -346,7 +351,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           y: l2Y,
           radius: 38,
           label: `C2\n(${modelName})`,
-          color: color,
+          color: nodeColor,
         });
 
         edges.push({
@@ -354,8 +359,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           to: c2Id,
           type: 'regressor-classifier2',
           progress: 0,
-          label: `eGFR: ${regPrediction}`,
-          color: color,
+          label: isAbnormal ? '' : `eGFR: ${regPrediction}`,
+          color: nodeColor,
         });
 
         const outId = `c2-outcome-l2-${modelName}`;
@@ -366,8 +371,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           x: colX.outcomes,
           y: l2Y,
           radius: 35,
-          label: `${c2Result.label}\n${c2Confidence.toFixed(1)}%`,
-          color: c2Result.label === 'CKD' ? '#c53030' : '#2f855a',
+          label: isAbnormal ? '' : `${c2Result.label}\n${c2Confidence.toFixed(1)}%`,
+          color: isAbnormal ? '#d1d5db' : (c2Result.label === 'CKD' ? '#c53030' : '#2f855a'),
         });
 
         edges.push({
@@ -375,7 +380,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
           to: outId,
           type: 'classifier2-outcome',
           progress: 0,
-          color: color,
+          color: nodeColor,
         });
       }
     });
@@ -500,7 +505,8 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
     // Text
     ctx.shadowColor = 'transparent';
-    ctx.fillStyle = '#fff';
+    // Use darker text for light grey abnormal nodes to ensure readability
+    ctx.fillStyle = node.color === '#d1d5db' ? '#374151' : '#fff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const lines = node.label.split('\n');
