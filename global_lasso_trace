@@ -446,3 +446,27 @@ In ElasticNet. type model_data: <class 'list'>
 len model_data: 14 len X: 14
 type element 0: <class 'list'>
 Success. Prediction: 86.8290839882259
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
+In Lasso. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 84.35798907711062
+In ElasticNet. type model_data: <class 'list'>
+len model_data: 14 len X: 14
+type element 0: <class 'list'>
+Success. Prediction: 83.46029796357082
