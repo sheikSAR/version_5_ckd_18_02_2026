@@ -28,7 +28,9 @@ CLASSIFIER_1_CLINICAL_FEATURES = [
     "OHA", "INSULIN", "HBA", "CHO", "TRI", "HB", "DR_Label"
 ]
 
-JSON_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models.json"
+# JSON_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models.json"
+JSON_MODEL_FILE = "backend/models/MatlabTrained/16K_NewDataModels.json"
+# JSON_MODEL_FILE = "backend/models/MatlabTrained/NewDataModels.json"
 JSON_LEVEL2_MODEL_FILE = "backend/models/MatlabTrained/CKD_Exported_Models_level2.json"
 
 # Models we expect to load and run from the JSON

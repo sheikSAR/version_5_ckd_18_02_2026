@@ -1,0 +1,2 @@
+['ID', 'age', 'gender', 'Durationofdiabetes', 'BMI', 'Hypertension', 'OHA', 'INSULIN', 'HBA', 'CHO', 'TRI', 'HB', 'DR_OD_OS', 'EGFR', 'predicted_eGFR']
+['ID', 'age', 'gender', 'Durationofdiabetes', 'BMI', 'Hypertension', 'OHA', 'INSULIN', 'HBA', 'CHO', 'TRI', 'HB', 'DR_OD_OS', 'EGFR', 'predicted_eGFR']
