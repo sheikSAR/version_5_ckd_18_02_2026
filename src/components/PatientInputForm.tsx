@@ -304,30 +304,38 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
         {/* DR_SEVERITY_OD */}
         <div className="form-group">
           <label htmlFor="dr_severity_od">DR Severity OD</label>
-          <input
+          <select
             id="dr_severity_od"
-            type="number"
-            step="0.1"
             value={formData.DR_SEVERITY_OD}
             onChange={(e) => handleInputChange('DR_SEVERITY_OD' as keyof PatientData, e.target.value)}
             className={errors.DR_SEVERITY_OD ? 'error' : ''}
-            placeholder="DR Severity OD"
-          />
+          >
+            <option value="" disabled>Select</option>
+            <option value="0">0 (No DR)</option>
+            <option value="2">2 (Mild NPDR)</option>
+            <option value="3">3 (Moderate NPDR)</option>
+            <option value="4">4 (Severe NPDR)</option>
+            <option value="5">5 (Proliferative DR)</option>
+          </select>
           {errors.DR_SEVERITY_OD && <span className="error-text">{errors.DR_SEVERITY_OD}</span>}
         </div>
 
         {/* DR_SEVERITY_OS */}
         <div className="form-group">
           <label htmlFor="dr_severity_os">DR Severity OS</label>
-          <input
+          <select
             id="dr_severity_os"
-            type="number"
-            step="0.1"
             value={formData.DR_SEVERITY_OS}
             onChange={(e) => handleInputChange('DR_SEVERITY_OS' as keyof PatientData, e.target.value)}
             className={errors.DR_SEVERITY_OS ? 'error' : ''}
-            placeholder="DR Severity OS"
-          />
+          >
+            <option value="" disabled>Select</option>
+            <option value="0">0 (No DR)</option>
+            <option value="2">2 (Mild NPDR)</option>
+            <option value="3">3 (Moderate NPDR)</option>
+            <option value="4">4 (Severe NPDR)</option>
+            <option value="5">5 (Proliferative DR)</option>
+          </select>
           {errors.DR_SEVERITY_OS && <span className="error-text">{errors.DR_SEVERITY_OS}</span>}
         </div>
       </div>
