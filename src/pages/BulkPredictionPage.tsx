@@ -211,42 +211,18 @@ const BulkPredictionPage = () => {
       const handleDownloadCsv = () => {
             if (!predictionResults) return;
 
-            // Generate dynamic headers
-            const pids = Object.keys(predictionResults);
-            let c2Headers: string[] = [];
-            if (pids.length > 0) {
-                  const sampleRes = predictionResults[pids[0]];
-                  if (sampleRes && sampleRes.Classifier2) {
-                        c2Headers = Object.keys(sampleRes.Classifier2);
-                  }
-            }
-
-            const headerRow = ['Patient_ID', 'Classifier1_Result', ...c2Headers.map(m => `${m}_(eGFR),${m}_C2_Result`)];
+            const headerRow = ['Patient_ID', 'Classifier1_Label', 'Classifier1_Probability', 'RandomForest_Label', 'RandomForest_Probability', 'RF_Model_Used'];
             const csvRows = [headerRow.join(',')];
 
             Object.keys(predictionResults).forEach(pid => {
                   const res = predictionResults[pid];
-                  const c1Risk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
                   const c1Label = res.Classifier1?.label || 'N/A';
-                  const c1Formatted = `${c1Label} (${c1Risk})`;
+                  const c1Prob = res.Classifier1?.probability != null ? res.Classifier1.probability.toFixed(1) : 'N/A';
+                  const rfLabel = res.RandomForest?.label || 'N/A';
+                  const rfProb = res.RandomForest?.probability != null ? res.RandomForest.probability.toFixed(1) : 'N/A';
+                  const rfModel = res.RandomForest?.model_used || 'N/A';
 
-                  const row = [pid, `"${c1Formatted}"`];
-
-                  // Add predictions for each available model
-                  c2Headers.forEach(modelName => {
-                        const modelEgfr = res.Predictions?.[modelName] ?? 'N/A';
-                        const formattedEgfr = typeof modelEgfr === 'number' ? modelEgfr.toFixed(2) : modelEgfr;
-
-                        const modelRes = res.Classifier2?.[modelName];
-                        const riskStr = modelRes?.probability != null ? `${modelRes.probability}%` : 'N/A';
-                        const labelStr = modelRes?.label || 'N/A';
-                        const c2Formatted = `${labelStr} (${riskStr})`;
-
-                        row.push(formattedEgfr);
-                        row.push(`"${c2Formatted}"`);
-                  });
-
-                  csvRows.push(row.join(','));
+                  csvRows.push([pid, c1Label, c1Prob, rfLabel, rfProb, rfModel].join(','));
             });
 
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -505,122 +481,57 @@ const BulkPredictionPage = () => {
                                                       <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Patient ID</th>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Classifier 1</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>L1 Tree eGFR</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>L1 Tree + C2</th>
-                                                            {(() => {
-                                                                  const pids = Object.keys(predictionResults);
-                                                                  if (pids.length > 0) {
-                                                                        const sampleRes = predictionResults[pids[0]];
-                                                                        if (sampleRes && sampleRes.Classifier2) {
-                                                                              return Object.keys(sampleRes.Classifier2).map(modelName => (
-                                                                                    <React.Fragment key={modelName}>
-                                                                                          <th style={{ padding: '12px', color: '#475569' }}>{modelName} eGFR</th>
-                                                                                          <th style={{ padding: '12px', color: '#475569' }}>C2 ({modelName})</th>
-                                                                                    </React.Fragment>
-                                                                              ));
-                                                                        }
-                                                                  }
-                                                                  return <th style={{ padding: '12px', color: '#475569' }}>Classifier 2 Result (Risk%)</th>;
-                                                            })()}
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Random Forest</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>RF Model</th>
                                                       </tr>
                                                 </thead>
                                                 <tbody>
                                                       {Object.keys(predictionResults).map((pid) => {
                                                             const res = predictionResults[pid];
 
-                                                            const c1Risk = res.Classifier1?.probability != null ? `${res.Classifier1.probability}%` : 'N/A';
+                                                            const c1Prob = res.Classifier1?.probability != null
+                                                                  ? (res.Classifier1.probability < 50 ? 100 - res.Classifier1.probability : res.Classifier1.probability)
+                                                                  : null;
                                                             const c1Label = res.Classifier1?.label || 'N/A';
 
-                                                            // Level 1 Tree eGFR
-                                                            const l1Egfr = (res as any).Level1_Tree_EGFR;
-                                                            const l1EgfrStr = l1Egfr != null ? Number(l1Egfr).toFixed(2) : 'N/A';
-
-                                                            // Level 1 C2
-                                                            const l1c2 = (res as any).Level1_Classifier2;
-                                                            const l1c2Label = l1c2?.label || 'N/A';
-                                                            const l1c2Prob = l1c2?.probability != null ? `${l1c2.probability}%` : 'N/A';
-
-                                                            // Get the dynamic keys to render each cell below
-                                                            let c2Keys: string[] = [];
-                                                            if (res.Classifier2) {
-                                                                  c2Keys = Object.keys(res.Classifier2);
-                                                            }
+                                                            const rfProb = res.RandomForest?.probability;
+                                                            const rfLabel = res.RandomForest?.label || 'N/A';
+                                                            const rfModel = res.RandomForest?.model_used === 'RF_14' ? '14 Features' : '12 Features';
 
                                                             return (
                                                                   <tr key={pid} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                                                         <td style={{ padding: '12px', fontWeight: '500' }}>{pid}</td>
                                                                         <td style={{ padding: '12px' }}>
                                                                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                    {c1Risk !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{c1Risk}</span>}
-                                                                                    {c1Label !== 'N/A' && (
-                                                                                          <span style={{
-                                                                                                padding: '4px 8px',
-                                                                                                borderRadius: '12px',
-                                                                                                fontSize: '13px',
-                                                                                                fontWeight: 'bold',
-                                                                                                backgroundColor: c1Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
-                                                                                                color: c1Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
-                                                                                          }}>
-                                                                                                {c1Label}
-                                                                                          </span>
-                                                                                    )}
+                                                                                    {c1Prob != null && <span style={{ color: '#475569', fontSize: '14px' }}>{c1Prob.toFixed(1)}%</span>}
+                                                                                    <span style={{
+                                                                                          padding: '4px 8px',
+                                                                                          borderRadius: '12px',
+                                                                                          fontSize: '13px',
+                                                                                          fontWeight: 'bold',
+                                                                                          backgroundColor: c1Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                          color: c1Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                    }}>
+                                                                                          {c1Label}
+                                                                                    </span>
                                                                               </div>
                                                                         </td>
-
-                                                                        <td style={{ padding: '12px', color: '#0369a1', fontWeight: '600' }}>{l1EgfrStr}</td>
                                                                         <td style={{ padding: '12px' }}>
                                                                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                    {l1c2Prob !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{l1c2Prob}</span>}
-                                                                                    {l1c2Label !== 'N/A' && (
-                                                                                          <span style={{
-                                                                                                padding: '4px 8px',
-                                                                                                borderRadius: '12px',
-                                                                                                fontSize: '13px',
-                                                                                                fontWeight: 'bold',
-                                                                                                backgroundColor: l1c2Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
-                                                                                                color: l1c2Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
-                                                                                          }}>
-                                                                                                {l1c2Label}
-                                                                                          </span>
-                                                                                    )}
+                                                                                    {rfProb != null && <span style={{ color: '#475569', fontSize: '14px' }}>{rfProb.toFixed(1)}%</span>}
+                                                                                    <span style={{
+                                                                                          padding: '4px 8px',
+                                                                                          borderRadius: '12px',
+                                                                                          fontSize: '13px',
+                                                                                          fontWeight: 'bold',
+                                                                                          backgroundColor: rfLabel.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                          color: rfLabel.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                    }}>
+                                                                                          {rfLabel}
+                                                                                    </span>
                                                                               </div>
                                                                         </td>
-
-                                                                        {c2Keys.length > 0 ? (
-                                                                              c2Keys.map(modelName => {
-                                                                                    const modelRes = res.Classifier2[modelName];
-                                                                                    const modelEgfr = res.Predictions?.[modelName] ?? 'N/A';
-                                                                                    const formattedEgfr = typeof modelEgfr === 'number' ? modelEgfr.toFixed(2) : modelEgfr;
-
-                                                                                    const riskStr = modelRes?.probability != null ? `${modelRes.probability}%` : 'N/A';
-                                                                                    const labelStr = modelRes?.label || 'N/A';
-
-                                                                                    return (
-                                                                                          <React.Fragment key={modelName}>
-                                                                                                <td style={{ padding: '12px' }}>{formattedEgfr}</td>
-                                                                                                <td style={{ padding: '12px' }}>
-                                                                                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                            {riskStr !== 'N/A' && <span style={{ color: '#475569', fontSize: '14px' }}>{riskStr}</span>}
-                                                                                                            {labelStr !== 'N/A' && (
-                                                                                                                  <span style={{
-                                                                                                                        padding: '4px 8px',
-                                                                                                                        borderRadius: '12px',
-                                                                                                                        fontSize: '13px',
-                                                                                                                        fontWeight: 'bold',
-                                                                                                                        backgroundColor: labelStr.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
-                                                                                                                        color: labelStr.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
-                                                                                                                  }}>
-                                                                                                                        {labelStr}
-                                                                                                                  </span>
-                                                                                                            )}
-                                                                                                      </div>
-                                                                                                </td>
-                                                                                          </React.Fragment>
-                                                                                    );
-                                                                              })
-                                                                        ) : (
-                                                                              <td style={{ padding: '12px' }}>N/A</td>
-                                                                        )}
+                                                                        <td style={{ padding: '12px', color: '#64748b', fontSize: '13px' }}>{rfModel}</td>
                                                                   </tr>
                                                             );
                                                       })}

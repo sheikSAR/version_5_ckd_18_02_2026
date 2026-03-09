@@ -10,10 +10,9 @@
     "Model": "backend/models/Classifier1/CKD_ResNet_XGB_Model.pkl",
     "Scaler": "backend/models/Classifier1/CKD_Scaler.pkl"
   },
-  "classifier_2": {
-    "Clinical_Cols": "backend/models/classifier2/1287CKD_Clinical_Cols.pkl",
-    "Model": "backend/models/classifier2/1287CKD_ResNet_XGB_Model.pkl",
-    "Scaler": "backend/models/classifier2/1287CKD_Scaler.pkl"
+  "random_forest": {
+    "model_12": "backend/models/New_Regressor/kidney_risk_model_final_FD_12.pkl",
+    "model_14": "backend/models/New_Regressor/kidney_risk_model_final_FD_14.pkl"
   },
   "output": {
     "json": "backend/outputs/EGFR_AllPatients_Predictions.json",

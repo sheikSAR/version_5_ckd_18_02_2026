@@ -14,11 +14,8 @@ interface SessionInfo {
 
 interface PredictionData {
       Patient_ID: string;
-      Level1_Tree_EGFR?: number | null;
-      Level1_Classifier2?: { label: string; probability: number } | null;
-      Predictions: Record<string, number>;
       Classifier1: { label: string; probability: number };
-      Classifier2: Record<string, { label: string; probability: number }>;
+      RandomForest: { label: string; probability: number; model_used: string };
 }
 
 const OverviewPage: React.FC = () => {
@@ -103,11 +100,8 @@ const OverviewPage: React.FC = () => {
                         <div style={{ marginBottom: '24px', background: '#f7fafc', borderRadius: '12px', overflow: 'hidden' }}>
                               <UserGraphRenderer
                                     patientId={prediction.Patient_ID}
-                                    predictions={prediction.Predictions}
                                     classifier1={prediction.Classifier1}
-                                    classifier2={prediction.Classifier2}
-                                    level1TreeEgfr={prediction.Level1_Tree_EGFR ?? undefined}
-                                    level1Classifier2={prediction.Level1_Classifier2 ?? undefined}
+                                    randomForest={prediction.RandomForest}
                               />
                         </div>
 
@@ -117,9 +111,9 @@ const OverviewPage: React.FC = () => {
                                     <thead>
                                           <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                                                 <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Component</th>
-                                                <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Predicted eGFR</th>
                                                 <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>CKD Risk</th>
                                                 <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Classification</th>
+                                                <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Model</th>
                                           </tr>
                                     </thead>
                                     <tbody>
@@ -131,83 +125,38 @@ const OverviewPage: React.FC = () => {
                                                 return (
                                                       <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
                                                             <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Classifier 1</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#94a3b8' }}>—</td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
                                                                   {prob.toFixed(1)}%
                                                             </td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                                                   <span style={isCKDStyle(c1.label)}>{c1.label}</span>
                                                             </td>
-                                                      </tr>
-                                                );
-                                          })()}
-
-                                          {/* Level 1 Tree */}
-                                          {prediction.Level1_Tree_EGFR != null && (() => {
-                                                const egfr = prediction.Level1_Tree_EGFR!;
-                                                const isCKD = egfr < 60;
-                                                return (
-                                                      <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
-                                                            <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Level 1 Tree</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>{egfr.toFixed(2)}</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#94a3b8' }}>—</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                                  <span style={isCKDStyle(isCKD ? 'CKD' : 'Non-CKD')}>{isCKD ? 'CKD' : 'Non-CKD'}</span>
+                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                                                                  Clinical + Image
                                                             </td>
                                                       </tr>
                                                 );
                                           })()}
 
-                                          {/* Level 1 Tree + C2 */}
-                                          {prediction.Level1_Classifier2 != null && (() => {
-                                                const l1c2 = prediction.Level1_Classifier2!;
-                                                const isCKD = l1c2.label?.toLowerCase() === 'ckd';
+                                          {/* Random Forest */}
+                                          {(() => {
+                                                const rf = prediction.RandomForest;
+                                                const isCKD = rf.label?.toLowerCase() === 'ckd';
                                                 return (
-                                                      <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
-                                                            <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Level 1 Tree + C2</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>
-                                                                  {prediction.Level1_Tree_EGFR?.toFixed(2) ?? '—'}
-                                                            </td>
+                                                      <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                                                            <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Random Forest</td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
-                                                                  {l1c2.probability}%
+                                                                  {rf.probability.toFixed(1)}%
                                                             </td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                                  <span style={isCKDStyle(l1c2.label)}>{l1c2.label}</span>
+                                                                  <span style={isCKDStyle(rf.label)}>{rf.label}</span>
+                                                            </td>
+                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                                                                  {rf.model_used === 'RF_14' ? '14 Features' : '12 Features'}
                                                             </td>
                                                       </tr>
                                                 );
                                           })()}
-
-                                          {/* Level 2 separator */}
-                                          {prediction.Predictions && Object.keys(prediction.Predictions).length > 0 && (
-                                                <tr>
-                                                      <td colSpan={4} style={{ padding: '6px 16px', fontSize: '12px', color: '#64748b', fontWeight: '600', backgroundColor: '#f1f5f9', letterSpacing: '0.5px' }}>
-                                                            LEVEL 2 REGRESSORS → CLASSIFIER 2
-                                                      </td>
-                                                </tr>
-                                          )}
-
-                                          {/* Level 2 models */}
-                                          {prediction.Predictions && Object.entries(prediction.Predictions).map(([modelName, egfrValue]) => {
-                                                const c2Result = prediction.Classifier2?.[modelName];
-                                                const isCKD = c2Result?.label?.toLowerCase() === 'ckd';
-                                                return (
-                                                      <tr key={modelName} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                            <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>{modelName}</td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#0369a1', fontWeight: '600' }}>
-                                                                  {typeof egfrValue === 'number' ? egfrValue.toFixed(2) : egfrValue}
-                                                            </td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
-                                                                  {c2Result ? `${c2Result.probability}%` : 'N/A'}
-                                                            </td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                                  {c2Result ? (
-                                                                        <span style={isCKDStyle(c2Result.label)}>{c2Result.label}</span>
-                                                                  ) : 'N/A'}
-                                                            </td>
-                                                      </tr>
-                                                );
-                                          })}
                                     </tbody>
                               </table>
                         </div>

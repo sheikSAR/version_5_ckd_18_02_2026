@@ -567,7 +567,7 @@ def trigger_user_prediction(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
-            "classifier_2": base_config.get("classifier_2", {}),
+            "random_forest": base_config.get("random_forest", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),
@@ -674,7 +674,7 @@ def predict_single_patient(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
-            "classifier_2": base_config.get("classifier_2", {}),
+            "random_forest": base_config.get("random_forest", {}),
             "images_dir": images_dir,
             "output": {
                 "json": os.path.join(output_dir, "predictions.json"),

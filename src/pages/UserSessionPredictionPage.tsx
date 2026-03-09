@@ -7,12 +7,15 @@ import '../styles/SimplePage.css'
 
 interface PatientPrediction {
   Patient_ID: string
-  Predictions: Record<string, number>
   Classifier1: {
     label: string
     probability: number
   }
-  Classifier2: Record<string, { label: string; probability: number }>
+  RandomForest: {
+    label: string
+    probability: number
+    model_used: string
+  }
 }
 
 interface PredictionsData {
@@ -197,22 +200,6 @@ const UserSessionPredictionPage = () => {
 
                   <div className="predictions-grid">
                     <div className="prediction-card">
-                      <h4>Regressor Predictions (EGFR)</h4>
-                      <div className="prediction-values">
-                        {Object.entries(
-                          predictions[selectedPatient].Predictions
-                        ).map(([modelName, value]) => (
-                          <div key={modelName} className="prediction-row">
-                            <span className="model-name">{modelName}</span>
-                            <span className="prediction-value">
-                              {typeof value === 'number' ? value.toFixed(2) : value}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="prediction-card">
                       <h4>Classifier 1 (Clinical + Image)</h4>
                       <div className="classifier-result">
                         <div className="classifier-label">
@@ -229,19 +216,15 @@ const UserSessionPredictionPage = () => {
                     </div>
 
                     <div className="prediction-card">
-                      <h4>Classifier 2 (Regressor-based Ensemble)</h4>
-                      <div className="classifier2-results">
-                        {Object.entries(
-                          predictions[selectedPatient].Classifier2
-                        ).map(([modelName, result]) => (
-                          <div key={modelName} className="classifier2-item">
-                            <span className="model-name">{modelName}</span>
-                            <span className="label">{result.label}</span>
-                            <span className="probability">
-                              {(result.probability < 50 ? 100 - result.probability : result.probability).toFixed(1)}%
-                            </span>
-                          </div>
-                        ))}
+                      <h4>Random Forest ({predictions[selectedPatient].RandomForest.model_used === 'RF_14' ? '14 Features' : '12 Features'})</h4>
+                      <div className="classifier-result">
+                        <div className="classifier-label">
+                          {predictions[selectedPatient].RandomForest.label}
+                        </div>
+                        <div className="classifier-probability">
+                          {predictions[selectedPatient].RandomForest.probability.toFixed(1)}
+                          % probability
+                        </div>
                       </div>
                     </div>
                   </div>

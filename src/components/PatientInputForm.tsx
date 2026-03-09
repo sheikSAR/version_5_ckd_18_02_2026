@@ -17,6 +17,8 @@ interface PatientData {
   HB: number;
   DR_Label: number;
   DR_OD_OS: number;
+  DR_SEVERITY_OD?: number;
+  DR_SEVERITY_OS?: number;
 }
 
 interface PatientInputFormProps {
@@ -39,6 +41,8 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
     HB: '',
     DR_Label: '',
     DR_OD_OS: '',
+    DR_SEVERITY_OD: '',
+    DR_SEVERITY_OS: '',
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -295,6 +299,32 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
             <option value="1">1 (Yes)</option>
           </select>
           {errors.DR_OD_OS && <span className="error-text">{errors.DR_OD_OS}</span>}
+        </div>
+
+        {/* DR_SEVERITY_OD (Optional) */}
+        <div className="form-group">
+          <label htmlFor="dr_severity_od">DR Severity OD <span style={{ color: '#94a3b8', fontSize: '12px' }}>(Optional)</span></label>
+          <input
+            id="dr_severity_od"
+            type="number"
+            step="0.1"
+            value={formData.DR_SEVERITY_OD}
+            onChange={(e) => handleInputChange('DR_SEVERITY_OD' as keyof PatientData, e.target.value)}
+            placeholder="DR Severity OD"
+          />
+        </div>
+
+        {/* DR_SEVERITY_OS (Optional) */}
+        <div className="form-group">
+          <label htmlFor="dr_severity_os">DR Severity OS <span style={{ color: '#94a3b8', fontSize: '12px' }}>(Optional)</span></label>
+          <input
+            id="dr_severity_os"
+            type="number"
+            step="0.1"
+            value={formData.DR_SEVERITY_OS}
+            onChange={(e) => handleInputChange('DR_SEVERITY_OS' as keyof PatientData, e.target.value)}
+            placeholder="DR Severity OS"
+          />
         </div>
       </div>
 
