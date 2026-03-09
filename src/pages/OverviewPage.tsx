@@ -152,7 +152,7 @@ const OverviewPage: React.FC = () => {
                                                                   <span style={isCKDStyle(rf.label)}>{rf.label}</span>
                                                             </td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                                                                  {rf.model_used === 'RF_14' ? '14 Features' : '12 Features'}
+                                                                  14 Features
                                                             </td>
                                                       </tr>
                                                 );

@@ -496,7 +496,7 @@ const BulkPredictionPage = () => {
 
                                                             const rfProb = res.RandomForest?.probability;
                                                             const rfLabel = res.RandomForest?.label || 'N/A';
-                                                            const rfModel = res.RandomForest?.model_used === 'RF_14' ? '14 Features' : '12 Features';
+                                                            const rfModel = '14 Features';
 
                                                             return (
                                                                   <tr key={pid} style={{ borderBottom: '1px solid #e2e8f0' }}>
