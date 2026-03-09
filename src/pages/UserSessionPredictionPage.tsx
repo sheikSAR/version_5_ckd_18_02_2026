@@ -216,7 +216,7 @@ const UserSessionPredictionPage = () => {
                     </div>
 
                     <div className="prediction-card">
-                      <h4>Random Forest (Clinical Features)</h4>
+                      <h4>Random Forest (Clinical)</h4>
                       <div className="classifier-result">
                         <div className="classifier-label">
                           {predictions[selectedPatient].RandomForest.label}

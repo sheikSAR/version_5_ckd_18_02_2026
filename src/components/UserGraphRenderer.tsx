@@ -142,7 +142,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     // --- ROW 2: Random Forest ---
     const rfY = rowStep * 2;
     const rfIsCKD = randomForest.label?.toLowerCase() === 'ckd';
-    const rfModelLabel = 'Clinical Features';
+    const rfModelLabel = 'Clinical';
 
     nodes.push({
       id: 'randomforest',
