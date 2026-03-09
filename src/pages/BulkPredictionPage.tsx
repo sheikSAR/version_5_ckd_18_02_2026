@@ -211,7 +211,7 @@ const BulkPredictionPage = () => {
       const handleDownloadCsv = () => {
             if (!predictionResults) return;
 
-            const headerRow = ['Patient_ID', 'Classifier1_Label', 'Classifier1_Probability', 'RandomForest_Label', 'RandomForest_Probability', 'RF_Model_Used'];
+            const headerRow = ['Patient_ID', 'Classifier1_Label', 'Classifier1_Probability', 'RandomForest_Label', 'RandomForest_Probability'];
             const csvRows = [headerRow.join(',')];
 
             Object.keys(predictionResults).forEach(pid => {
@@ -220,9 +220,8 @@ const BulkPredictionPage = () => {
                   const c1Prob = res.Classifier1?.probability != null ? res.Classifier1.probability.toFixed(1) : 'N/A';
                   const rfLabel = res.RandomForest?.label || 'N/A';
                   const rfProb = res.RandomForest?.probability != null ? res.RandomForest.probability.toFixed(1) : 'N/A';
-                  const rfModel = res.RandomForest?.model_used || 'N/A';
 
-                  csvRows.push([pid, c1Label, c1Prob, rfLabel, rfProb, rfModel].join(','));
+                  csvRows.push([pid, c1Label, c1Prob, rfLabel, rfProb].join(','));
             });
 
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -482,7 +481,6 @@ const BulkPredictionPage = () => {
                                                             <th style={{ padding: '12px', color: '#475569' }}>Patient ID</th>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Classifier 1</th>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Random Forest</th>
-                                                            <th style={{ padding: '12px', color: '#475569' }}>RF Model</th>
                                                       </tr>
                                                 </thead>
                                                 <tbody>
@@ -496,7 +494,6 @@ const BulkPredictionPage = () => {
 
                                                             const rfProb = res.RandomForest?.probability;
                                                             const rfLabel = res.RandomForest?.label || 'N/A';
-                                                            const rfModel = '14 Features';
 
                                                             return (
                                                                   <tr key={pid} style={{ borderBottom: '1px solid #e2e8f0' }}>
@@ -531,7 +528,6 @@ const BulkPredictionPage = () => {
                                                                                     </span>
                                                                               </div>
                                                                         </td>
-                                                                        <td style={{ padding: '12px', color: '#64748b', fontSize: '13px' }}>{rfModel}</td>
                                                                   </tr>
                                                             );
                                                       })}
