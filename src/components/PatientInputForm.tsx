@@ -73,7 +73,7 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
       newErrors.BMI = 'Invalid';
     }
 
-    const requiredFields: (keyof PatientData)[] = ['gender', 'Hypertension', 'OHA', 'INSULIN', 'DR_OD_OS', 'Durationofdiabetes', 'HBA', 'CHO', 'TRI', 'HB'];
+    const requiredFields: (keyof PatientData)[] = ['gender', 'Hypertension', 'OHA', 'INSULIN', 'DR_OD_OS', 'Durationofdiabetes', 'HBA', 'CHO', 'TRI', 'HB', 'DR_SEVERITY_OD', 'DR_SEVERITY_OS'];
     requiredFields.forEach(field => {
       if (formData[field] === '') {
         newErrors[field] = 'Required';
@@ -301,30 +301,34 @@ const PatientInputForm: React.FC<PatientInputFormProps> = ({ onSubmit }) => {
           {errors.DR_OD_OS && <span className="error-text">{errors.DR_OD_OS}</span>}
         </div>
 
-        {/* DR_SEVERITY_OD (Optional) */}
+        {/* DR_SEVERITY_OD */}
         <div className="form-group">
-          <label htmlFor="dr_severity_od">DR Severity OD <span style={{ color: '#94a3b8', fontSize: '12px' }}>(Optional)</span></label>
+          <label htmlFor="dr_severity_od">DR Severity OD</label>
           <input
             id="dr_severity_od"
             type="number"
             step="0.1"
             value={formData.DR_SEVERITY_OD}
             onChange={(e) => handleInputChange('DR_SEVERITY_OD' as keyof PatientData, e.target.value)}
+            className={errors.DR_SEVERITY_OD ? 'error' : ''}
             placeholder="DR Severity OD"
           />
+          {errors.DR_SEVERITY_OD && <span className="error-text">{errors.DR_SEVERITY_OD}</span>}
         </div>
 
-        {/* DR_SEVERITY_OS (Optional) */}
+        {/* DR_SEVERITY_OS */}
         <div className="form-group">
-          <label htmlFor="dr_severity_os">DR Severity OS <span style={{ color: '#94a3b8', fontSize: '12px' }}>(Optional)</span></label>
+          <label htmlFor="dr_severity_os">DR Severity OS</label>
           <input
             id="dr_severity_os"
             type="number"
             step="0.1"
             value={formData.DR_SEVERITY_OS}
             onChange={(e) => handleInputChange('DR_SEVERITY_OS' as keyof PatientData, e.target.value)}
+            className={errors.DR_SEVERITY_OS ? 'error' : ''}
             placeholder="DR Severity OS"
           />
+          {errors.DR_SEVERITY_OS && <span className="error-text">{errors.DR_SEVERITY_OS}</span>}
         </div>
       </div>
 
