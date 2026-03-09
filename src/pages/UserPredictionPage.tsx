@@ -501,7 +501,7 @@ const UserPredictionPage = () => {
                             </span>
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                            14 Features
+                            Clinical Features
                           </td>
                         </tr>
                       );
