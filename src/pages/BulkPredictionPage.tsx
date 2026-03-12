@@ -211,17 +211,19 @@ const BulkPredictionPage = () => {
       const handleDownloadCsv = () => {
             if (!predictionResults) return;
 
-            const headerRow = ['Patient_ID', 'Classifier1_Label', 'Classifier1_Probability', 'RandomForest_Label', 'RandomForest_Probability'];
+            const headerRow = ['Patient_ID', 'Classifier1_Label', 'Classifier1_Probability', 'Classifier2_Label', 'Classifier2_Probability', 'RandomForest_Label', 'RandomForest_Probability'];
             const csvRows = [headerRow.join(',')];
 
             Object.keys(predictionResults).forEach(pid => {
                   const res = predictionResults[pid];
                   const c1Label = res.Classifier1?.label || 'N/A';
                   const c1Prob = res.Classifier1?.probability != null ? res.Classifier1.probability.toFixed(1) : 'N/A';
+                  const c2Label = res.Classifier2?.label || 'N/A';
+                  const c2Prob = res.Classifier2?.probability != null ? res.Classifier2.probability.toFixed(1) : 'N/A';
                   const rfLabel = res.RandomForest?.label || 'N/A';
                   const rfProb = res.RandomForest?.probability != null ? res.RandomForest.probability.toFixed(1) : 'N/A';
 
-                  csvRows.push([pid, c1Label, c1Prob, rfLabel, rfProb].join(','));
+                  csvRows.push([pid, c1Label, c1Prob, c2Label, c2Prob, rfLabel, rfProb].join(','));
             });
 
             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -480,6 +482,7 @@ const BulkPredictionPage = () => {
                                                       <tr style={{ backgroundColor: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Patient ID</th>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Classifier 1</th>
+                                                            <th style={{ padding: '12px', color: '#475569' }}>Classifier 2</th>
                                                             <th style={{ padding: '12px', color: '#475569' }}>Random Forest</th>
                                                       </tr>
                                                 </thead>
@@ -491,6 +494,11 @@ const BulkPredictionPage = () => {
                                                                   ? (res.Classifier1.probability < 50 ? 100 - res.Classifier1.probability : res.Classifier1.probability)
                                                                   : null;
                                                             const c1Label = res.Classifier1?.label || 'N/A';
+
+                                                            const c2Prob = res.Classifier2?.probability != null
+                                                                  ? (res.Classifier2.probability < 50 ? 100 - res.Classifier2.probability : res.Classifier2.probability)
+                                                                  : null;
+                                                            const c2Label = res.Classifier2?.label || 'N/A';
 
                                                             const rfProb = res.RandomForest?.probability;
                                                             const rfLabel = res.RandomForest?.label || 'N/A';
@@ -510,6 +518,21 @@ const BulkPredictionPage = () => {
                                                                                           color: c1Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
                                                                                     }}>
                                                                                           {c1Label}
+                                                                                    </span>
+                                                                              </div>
+                                                                        </td>
+                                                                        <td style={{ padding: '12px' }}>
+                                                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    {c2Prob != null && <span style={{ color: '#475569', fontSize: '14px' }}>{c2Prob.toFixed(1)}%</span>}
+                                                                                    <span style={{
+                                                                                          padding: '4px 8px',
+                                                                                          borderRadius: '12px',
+                                                                                          fontSize: '13px',
+                                                                                          fontWeight: 'bold',
+                                                                                          backgroundColor: c2Label.toLowerCase() === 'ckd' ? '#fee2e2' : '#dcfce7',
+                                                                                          color: c2Label.toLowerCase() === 'ckd' ? '#b91c1c' : '#15803d'
+                                                                                    }}>
+                                                                                          {c2Label}
                                                                                     </span>
                                                                               </div>
                                                                         </td>

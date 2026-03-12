@@ -567,6 +567,7 @@ def trigger_user_prediction(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
+            "classifier_2": base_config.get("classifier_2", {}),
             "random_forest": base_config.get("random_forest", {}),
             "images_dir": images_dir,
             "output": {
@@ -674,6 +675,7 @@ def predict_single_patient(user_id, session_id):
                 "target_column": "EGFR",
             },
             "classifier_1": base_config.get("classifier_1", {}),
+            "classifier_2": base_config.get("classifier_2", {}),
             "random_forest": base_config.get("random_forest", {}),
             "images_dir": images_dir,
             "output": {
@@ -776,17 +778,14 @@ def upload_user_file(user_id):
                 file_content = file.read()
                 df = pd.read_excel(io.BytesIO(file_content))
 
-                # Save processed data as JSON
+                # Save raw data as JSON so the frontend displays the actual values
                 initial_data_path = os.path.join(input_dir, "initial_data.json")
-                processed_rows = preprocess_excel_data(df)
-
-                from backend.preprocess import add_chained_probabilities
-                processed_rows_with_probs = [
-                    add_chained_probabilities(record, df) for record in processed_rows
-                ]
+                
+                # Convert DataFrame to standard dicts, replacing NaN with None for JSON serialization
+                raw_records = df.replace({float('nan'): None}).to_dict('records')
 
                 with open(initial_data_path, "w") as f:
-                    json.dump(processed_rows_with_probs, f, indent=2)
+                    json.dump(raw_records, f, indent=2)
 
                 # Save original Excel file
                 input_xlsx_path = os.path.join(input_dir, "inputData.xlsx")
@@ -1007,17 +1006,14 @@ def upload_bulk_local(user_id):
                 else:
                     return jsonify({"success": False, "error": "Excel file must contain an 'ID' column"}), 400
 
-            # Preprocess and save JSON
+            # Save raw data as JSON so the frontend displays the actual values
             initial_data_path = os.path.join(input_dir, "initial_data.json")
-            processed_rows = preprocess_excel_data(df)
-
-            from backend.preprocess import add_chained_probabilities
-            processed_rows_with_probs = [
-                add_chained_probabilities(record, df) for record in processed_rows
-            ]
+            
+            # Convert DataFrame to standard dicts, replacing NaN with None for JSON serialization
+            raw_records = df.replace({float('nan'): None}).to_dict('records')
 
             with open(initial_data_path, "w") as f:
-                json.dump(processed_rows_with_probs, f, indent=2)
+                json.dump(raw_records, f, indent=2)
 
             # Save original Excel
             input_xlsx_path = os.path.join(input_dir, "inputData.xlsx")
@@ -1145,17 +1141,14 @@ def upload_bulk_files(user_id):
                 else:
                     return jsonify({"success": False, "error": "Excel file must contain an 'ID' column"}), 400
 
-            # Preprocess and save JSON
+            # Save raw data as JSON so the frontend displays the actual values
             initial_data_path = os.path.join(input_dir, "initial_data.json")
-            processed_rows = preprocess_excel_data(df)
-
-            from backend.preprocess import add_chained_probabilities
-            processed_rows_with_probs = [
-                add_chained_probabilities(record, df) for record in processed_rows
-            ]
+            
+            # Convert DataFrame to standard dicts, replacing NaN with None for JSON serialization
+            raw_records = df.replace({float('nan'): None}).to_dict('records')
 
             with open(initial_data_path, "w") as f:
-                json.dump(processed_rows_with_probs, f, indent=2)
+                json.dump(raw_records, f, indent=2)
 
             # Save original Excel
             input_xlsx_path = os.path.join(input_dir, "inputData.xlsx")

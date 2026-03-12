@@ -15,6 +15,7 @@ interface SessionInfo {
 interface PredictionData {
       Patient_ID: string;
       Classifier1: { label: string; probability: number };
+      Classifier2: { label: string; probability: number };
       RandomForest: { label: string; probability: number; model_used: string };
 }
 
@@ -101,6 +102,7 @@ const OverviewPage: React.FC = () => {
                               <UserGraphRenderer
                                     patientId={prediction.Patient_ID}
                                     classifier1={prediction.Classifier1}
+                                    classifier2={prediction.Classifier2}
                                     randomForest={prediction.RandomForest}
                               />
                         </div>
@@ -113,7 +115,6 @@ const OverviewPage: React.FC = () => {
                                                 <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Component</th>
                                                 <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>CKD Risk</th>
                                                 <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Classification</th>
-                                                <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Model</th>
                                           </tr>
                                     </thead>
                                     <tbody>
@@ -131,8 +132,23 @@ const OverviewPage: React.FC = () => {
                                                             <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                                                   <span style={isCKDStyle(c1.label)}>{c1.label}</span>
                                                             </td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                                                                  Clinical + Image
+                                                      </tr>
+                                                );
+                                          })()}
+
+                                          {/* Classifier 2 */}
+                                          {(() => {
+                                                const c2 = prediction.Classifier2;
+                                                const isCKD = c2?.label?.toLowerCase() === 'ckd';
+                                                const prob = c2?.probability < 50 ? 100 - c2.probability : c2?.probability;
+                                                return (
+                                                      <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+                                                            <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Classifier 2</td>
+                                                            <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
+                                                                  {prob?.toFixed(1) || '0.0'}%
+                                                            </td>
+                                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                                  <span style={isCKDStyle(c2?.label)}>{c2?.label || 'N/A'}</span>
                                                             </td>
                                                       </tr>
                                                 );
@@ -150,9 +166,6 @@ const OverviewPage: React.FC = () => {
                                                             </td>
                                                             <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                                                                   <span style={isCKDStyle(rf.label)}>{rf.label}</span>
-                                                            </td>
-                                                            <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                                                                  Clinical
                                                             </td>
                                                       </tr>
                                                 );

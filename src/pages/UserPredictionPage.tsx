@@ -40,6 +40,10 @@ interface PredictionResult {
     label: string;
     probability: number;
   };
+  Classifier2: {
+    label: string;
+    probability: number;
+  };
   RandomForest: {
     label: string;
     probability: number;
@@ -430,6 +434,7 @@ const UserPredictionPage = () => {
               <UserGraphRenderer
                 patientId={predictionResult.Patient_ID}
                 classifier1={predictionResult.Classifier1}
+                classifier2={predictionResult.Classifier2}
                 randomForest={predictionResult.RandomForest}
               />
             </div>
@@ -443,7 +448,6 @@ const UserPredictionPage = () => {
                       <th style={{ padding: '12px 16px', textAlign: 'left', color: '#475569', fontWeight: '600' }}>Component</th>
                       <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>CKD Risk</th>
                       <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Classification</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'center', color: '#475569', fontWeight: '600' }}>Model</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -470,8 +474,32 @@ const UserPredictionPage = () => {
                               {c1.label}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                            Clinical + Image
+                        </tr>
+                      );
+                    })()}
+
+                    {/* Classifier 2 Row */}
+                    {(() => {
+                      const c2 = predictionResult.Classifier2;
+                      const isCKD = c2?.label?.toLowerCase() === 'ckd';
+                      const prob = c2?.probability < 50 ? 100 - c2.probability : c2?.probability;
+                      return (
+                        <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafafa' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: '600', color: '#1e293b' }}>Classifier 2</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '700', color: isCKD ? '#b91c1c' : '#15803d' }}>
+                            {prob?.toFixed(1) || '0.0'}%
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <span style={{
+                              padding: '4px 14px',
+                              borderRadius: '20px',
+                              fontSize: '13px',
+                              fontWeight: 'bold',
+                              backgroundColor: isCKD ? '#fee2e2' : '#dcfce7',
+                              color: isCKD ? '#b91c1c' : '#15803d'
+                            }}>
+                              {c2?.label || 'N/A'}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -499,9 +527,6 @@ const UserPredictionPage = () => {
                             }}>
                               {rf.label}
                             </span>
-                          </td>
-                          <td style={{ padding: '12px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
-                            Clinical
                           </td>
                         </tr>
                       );

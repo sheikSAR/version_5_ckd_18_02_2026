@@ -11,6 +11,10 @@ interface PatientPrediction {
     label: string
     probability: number
   }
+  Classifier2: {
+    label: string
+    probability: number
+  }
   RandomForest: {
     label: string
     probability: number
@@ -200,7 +204,7 @@ const UserSessionPredictionPage = () => {
 
                   <div className="predictions-grid">
                     <div className="prediction-card">
-                      <h4>Classifier 1 (Clinical + Image)</h4>
+                      <h4>Classifier 1</h4>
                       <div className="classifier-result">
                         <div className="classifier-label">
                           {predictions[selectedPatient].Classifier1.label}
@@ -216,7 +220,23 @@ const UserSessionPredictionPage = () => {
                     </div>
 
                     <div className="prediction-card">
-                      <h4>Random Forest (Clinical)</h4>
+                      <h4>Classifier 2</h4>
+                      <div className="classifier-result">
+                        <div className="classifier-label">
+                          {predictions[selectedPatient].Classifier2.label}
+                        </div>
+                        <div className="classifier-probability">
+                          {(predictions[selectedPatient].Classifier2.probability < 50
+                            ? 100 - predictions[selectedPatient].Classifier2.probability
+                            : predictions[selectedPatient].Classifier2.probability
+                          ).toFixed(1)}
+                          % confidence
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="prediction-card">
+                      <h4>Random Forest</h4>
                       <div className="classifier-result">
                         <div className="classifier-label">
                           {predictions[selectedPatient].RandomForest.label}

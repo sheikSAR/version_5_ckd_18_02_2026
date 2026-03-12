@@ -2,20 +2,24 @@ import React, { useEffect, useRef, useCallback } from 'react';
 
 interface UserGraphRendererProps {
   patientId: string;
-  classifier1: {
+  classifier1?: {
     label: string;
     probability: number;
   };
-  randomForest: {
+  classifier2?: {
     label: string;
     probability: number;
-    model_used: string;
+  };
+  randomForest?: {
+    label: string;
+    probability: number;
+    model_used?: string;
   };
 }
 
 interface NodeData {
   id: string;
-  type: 'patient' | 'classifier1' | 'randomforest' | 'outcome';
+  type: 'patient' | 'classifier1' | 'classifier2' | 'randomforest' | 'outcome';
   x: number;
   y: number;
   radius: number;
@@ -27,7 +31,7 @@ interface NodeData {
 interface EdgeData {
   from: string;
   to: string;
-  type: 'patient-classifier1' | 'classifier1-outcome' | 'patient-rf' | 'rf-outcome';
+  type: 'patient-classifier1' | 'classifier1-outcome' | 'classifier2-outcome' | 'patient-rf' | 'rf-outcome' | 'rf-classifier2';
   progress: number;
   label?: string;
   color?: string;
@@ -37,6 +41,7 @@ interface AnimationState {
   patientNodeAlpha: number;
   edgesProgress: Record<string, number>;
   classifier1NodeAlpha: number;
+  classifier2NodeAlpha: number;
   rfNodeAlpha: number;
   outcomeNodesAlpha: Record<string, number>;
   dashOffset: number;
@@ -45,6 +50,7 @@ interface AnimationState {
 const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
   patientId,
   classifier1,
+  classifier2,
   randomForest,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,6 +62,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     patientNodeAlpha: 0,
     edgesProgress: {},
     classifier1NodeAlpha: 0,
+    classifier2NodeAlpha: 0,
     rfNodeAlpha: 0,
     outcomeNodesAlpha: {},
     dashOffset: 0,
@@ -76,39 +83,47 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
     // Define Grid Columns
     const colX = {
-      patient: width * 0.12,
-      models: width * 0.42,
-      outcomes: width * 0.80,
+      patient: width * 0.10,
+      layer1: width * 0.35,
+      layer2: width * 0.60,
+      outcomes: width * 0.85,
     };
 
     const nodes: NodeData[] = [];
     const edges: EdgeData[] = [];
 
-    // Total rows: Classifier 1 + Random Forest
-    const totalRows = 2;
-    const rowStep = height / (totalRows + 1);
+    // Heights
+    const yTop = height * 0.25;
+    const yMid = height * 0.50;
+    const yBot = height * 0.75;
 
     // 1. Patient Node (Root) — vertically centered
-    const patientY = height * 0.5;
     nodes.push({
       id: 'patient',
       type: 'patient',
       x: colX.patient,
-      y: patientY,
+      y: yMid,
       radius: 55,
       label: `Patient\n${patientId}`,
       color: '#2d3748',
     });
 
-    // --- ROW 1: Classifier 1 ---
-    const c1Y = rowStep * 1;
+    // Fallbacks
+    const c1Prob = classifier1?.probability ?? 0;
+    const c1Label = classifier1?.label ?? 'Pending';
+    const c2Prob = classifier2?.probability ?? 0;
+    const c2Label = classifier2?.label ?? 'Pending';
+    const rfProb = randomForest?.probability ?? 0;
+    const rfLabel = randomForest?.label ?? 'Pending';
+
+    // --- LAYER 1: Classifier 1 ---
     nodes.push({
       id: 'classifier1',
       type: 'classifier1',
-      x: colX.models,
-      y: c1Y,
+      x: colX.layer1,
+      y: yTop,
       radius: 50,
-      label: 'Classifier 1\n(Clinical + Img)',
+      label: 'Classifier 1',
       color: '#e53e3e',
     });
     edges.push({
@@ -119,17 +134,17 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       color: '#e53e3e',
     });
 
-    const c1Confidence = classifier1.probability < 50 ? 100 - classifier1.probability : classifier1.probability;
-    const c1IsCKD = classifier1.label?.toLowerCase() === 'ckd';
+    const c1Confidence = c1Prob < 50 ? 100 - c1Prob : c1Prob;
+    const c1IsCKD = c1Label.toLowerCase() === 'ckd';
     nodes.push({
       id: 'c1-outcome',
       type: 'outcome',
       x: colX.outcomes,
-      y: c1Y,
+      y: yTop,
       radius: 45,
-      label: `${classifier1.label}\n${c1Confidence.toFixed(1)}%`,
+      label: `${c1Label}\n${c1Confidence.toFixed(1)}%`,
       color: c1IsCKD ? '#c53030' : '#2f855a',
-      probability: classifier1.probability,
+      probability: c1Prob,
     });
     edges.push({
       from: 'classifier1',
@@ -139,18 +154,15 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       color: '#e53e3e',
     });
 
-    // --- ROW 2: Random Forest ---
-    const rfY = rowStep * 2;
-    const rfIsCKD = randomForest.label?.toLowerCase() === 'ckd';
-    const rfModelLabel = 'Clinical';
-
+    // --- LAYER 1: Random Forest ---
+    const rfIsCKD = rfLabel.toLowerCase() === 'ckd';
     nodes.push({
       id: 'randomforest',
       type: 'randomforest',
-      x: colX.models,
-      y: rfY,
+      x: colX.layer1,
+      y: yBot,
       radius: 50,
-      label: `Random Forest\n(${rfModelLabel})`,
+      label: 'Random Forest',
       color: '#3b82f6',
     });
     edges.push({
@@ -165,11 +177,11 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       id: 'rf-outcome',
       type: 'outcome',
       x: colX.outcomes,
-      y: rfY,
+      y: yBot,
       radius: 45,
-      label: `${randomForest.label}\n${randomForest.probability.toFixed(1)}%`,
+      label: `${rfLabel}\n${rfProb.toFixed(1)}%`,
       color: rfIsCKD ? '#c53030' : '#2f855a',
-      probability: randomForest.probability,
+      probability: rfProb,
     });
     edges.push({
       from: 'randomforest',
@@ -177,6 +189,46 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       type: 'rf-outcome',
       progress: 0,
       color: '#3b82f6',
+    });
+
+    // --- LAYER 2: Classifier 2 ---
+    nodes.push({
+      id: 'classifier2',
+      type: 'classifier2',
+      x: colX.layer2,
+      y: yMid,
+      radius: 50,
+      label: 'Classifier 2',
+      color: '#d69e2e',
+    });
+
+    // Edge from RF
+    edges.push({
+      from: 'randomforest',
+      to: 'classifier2',
+      type: 'rf-classifier2',
+      progress: 0,
+      color: '#d69e2e',
+    });
+
+    const c2Confidence = c2Prob < 50 ? 100 - c2Prob : c2Prob;
+    const c2IsCKD = c2Label.toLowerCase() === 'ckd';
+    nodes.push({
+      id: 'c2-outcome',
+      type: 'outcome',
+      x: colX.outcomes,
+      y: yMid,
+      radius: 45,
+      label: `${c2Label}\n${c2Confidence.toFixed(1)}%`,
+      color: c2IsCKD ? '#c53030' : '#2f855a',
+      probability: c2Prob,
+    });
+    edges.push({
+      from: 'classifier2',
+      to: 'c2-outcome',
+      type: 'classifier2-outcome',
+      progress: 0,
+      color: '#d69e2e',
     });
 
     nodesRef.current = nodes;
@@ -187,6 +239,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       patientNodeAlpha: 0,
       edgesProgress: {},
       classifier1NodeAlpha: 0,
+      classifier2NodeAlpha: 0,
       rfNodeAlpha: 0,
       outcomeNodesAlpha: {},
       dashOffset: 0,
@@ -198,7 +251,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
     });
 
     animationStateRef.current = newState;
-  }, [patientId, classifier1, randomForest]);
+  }, [patientId, classifier1, classifier2, randomForest]);
 
   const updateAnimation = useCallback(
     (elapsed: number) => {
@@ -207,23 +260,37 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
 
       s.patientNodeAlpha = Math.min(elapsed / timings.patientIn, 1);
 
-      // C1 timings
-      const c1Start = timings.patientIn;
-      s.edgesProgress['patient-classifier1'] = Math.min(Math.max(0, elapsed - c1Start) / timings.edgeDuration, 1);
-      const c1NodeStart = c1Start + timings.edgeDuration;
-      s.classifier1NodeAlpha = Math.min(Math.max(0, elapsed - c1NodeStart) / timings.nodeDuration, 1);
-      const c1OutStart = c1NodeStart + timings.nodeDuration;
-      s.edgesProgress['classifier1-c1-outcome'] = Math.min(Math.max(0, elapsed - c1OutStart) / timings.outcomeEdgeDuration, 1);
-      s.outcomeNodesAlpha['c1-outcome'] = Math.min(Math.max(0, elapsed - (c1OutStart + timings.outcomeEdgeDuration)) / timings.outcomeNodeDuration, 1);
+      // --- Layer 1 (C1 & RF) ---
+      const l1EdgeStart = timings.patientIn;
+      s.edgesProgress['patient-classifier1'] = Math.min(Math.max(0, elapsed - l1EdgeStart) / timings.edgeDuration, 1);
+      s.edgesProgress['patient-randomforest'] = Math.min(Math.max(0, elapsed - l1EdgeStart) / timings.edgeDuration, 1);
 
-      // RF timings (starts slightly after C1)
-      const rfStart = timings.patientIn + 150;
-      s.edgesProgress['patient-randomforest'] = Math.min(Math.max(0, elapsed - rfStart) / timings.edgeDuration, 1);
-      const rfNodeStart = rfStart + timings.edgeDuration;
-      s.rfNodeAlpha = Math.min(Math.max(0, elapsed - rfNodeStart) / timings.nodeDuration, 1);
-      const rfOutStart = rfNodeStart + timings.nodeDuration;
-      s.edgesProgress['randomforest-rf-outcome'] = Math.min(Math.max(0, elapsed - rfOutStart) / timings.outcomeEdgeDuration, 1);
-      s.outcomeNodesAlpha['rf-outcome'] = Math.min(Math.max(0, elapsed - (rfOutStart + timings.outcomeEdgeDuration)) / timings.outcomeNodeDuration, 1);
+      const l1NodeStart = l1EdgeStart + timings.edgeDuration;
+      s.classifier1NodeAlpha = Math.min(Math.max(0, elapsed - l1NodeStart) / timings.nodeDuration, 1);
+      s.rfNodeAlpha = Math.min(Math.max(0, elapsed - l1NodeStart) / timings.nodeDuration, 1);
+
+      // --- Layer 1 Outputs (to Outcomes & to C2) ---
+      const l1OutStart = l1NodeStart + timings.nodeDuration;
+      s.edgesProgress['classifier1-c1-outcome'] = Math.min(Math.max(0, elapsed - l1OutStart) / timings.outcomeEdgeDuration, 1);
+      s.edgesProgress['randomforest-rf-outcome'] = Math.min(Math.max(0, elapsed - l1OutStart) / timings.outcomeEdgeDuration, 1);
+
+      // RF -> C2 starts here
+      s.edgesProgress['randomforest-classifier2'] = Math.min(Math.max(0, elapsed - l1OutStart) / timings.edgeDuration, 1);
+
+      // --- Layer 2 (C2) ---
+      const l2NodeStart = l1OutStart + timings.edgeDuration;
+      s.classifier2NodeAlpha = Math.min(Math.max(0, elapsed - l2NodeStart) / timings.nodeDuration, 1);
+
+      // --- Layer 2 Output ---
+      const l2OutStart = l2NodeStart + timings.nodeDuration;
+      s.edgesProgress['classifier2-c2-outcome'] = Math.min(Math.max(0, elapsed - l2OutStart) / timings.outcomeEdgeDuration, 1);
+
+      // --- All Outcomes appear ---
+      // C1 & RF outcomes appear early
+      s.outcomeNodesAlpha['c1-outcome'] = Math.min(Math.max(0, elapsed - (l1OutStart + timings.outcomeEdgeDuration)) / timings.outcomeNodeDuration, 1);
+      s.outcomeNodesAlpha['rf-outcome'] = Math.min(Math.max(0, elapsed - (l1OutStart + timings.outcomeEdgeDuration)) / timings.outcomeNodeDuration, 1);
+      // C2 outcome appears later
+      s.outcomeNodesAlpha['c2-outcome'] = Math.min(Math.max(0, elapsed - (l2OutStart + timings.outcomeEdgeDuration)) / timings.outcomeNodeDuration, 1);
 
       s.dashOffset = (s.dashOffset + 1) % 20;
     },
@@ -354,6 +421,7 @@ const UserGraphRenderer: React.FC<UserGraphRendererProps> = ({
       let alpha = 0;
       if (node.type === 'patient') alpha = s.patientNodeAlpha;
       else if (node.type === 'classifier1') alpha = s.classifier1NodeAlpha;
+      else if (node.type === 'classifier2') alpha = s.classifier2NodeAlpha;
       else if (node.type === 'randomforest') alpha = s.rfNodeAlpha;
       else if (node.type === 'outcome') alpha = s.outcomeNodesAlpha[node.id];
 

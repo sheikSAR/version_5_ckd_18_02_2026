@@ -139,8 +139,22 @@ def run_classifier_1(patient, clinical_columns, model, scaler, image_paths=None)
         # Convert patient dict to DataFrame
         import pandas as pd
         
-        # Only use the needed original clinical columns
-        patient_subset = {k: patient.get(k, 0.0) for k in clinical_columns if k in patient}
+        # Build a normalized lookup to handle column name mismatches (e.g., 'DR _Label' vs 'DR_Label')
+        # Create a map from normalized (no-space) keys to actual patient keys
+        patient_keys = {}
+        for pk in patient.index if hasattr(patient, 'index') else patient.keys():
+            patient_keys[str(pk).replace(' ', '')] = pk
+        
+        patient_subset = {}
+        for k in clinical_columns:
+            k_norm = str(k).replace(' ', '')
+            if k_norm in patient_keys:
+                patient_subset[k] = patient[patient_keys[k_norm]]
+            elif k in patient:
+                patient_subset[k] = patient[k]
+            else:
+                patient_subset[k] = 0.0
+        
         patient_df = pd.DataFrame([patient_subset])
         
         # One-hot encoding alignment (matches training)
@@ -181,6 +195,70 @@ def run_classifier_1(patient, clinical_columns, model, scaler, image_paths=None)
             f.write(f"Classifier 1 Error: {str(e)}\n")
             f.write(traceback.format_exc() + "\n")
         print(f"Classifier 1 error: {str(e)}")
+        return {"Prediction": "Error", "Probability": 0.0, "Error": str(e)}
+
+
+def run_classifier_2(patient, clinical_columns, model, scaler, rf_probability, image_paths=None):
+    """Run Classifier 2 (CKD prediction with clinical + RF prob + image features)"""
+    try:
+        import numpy as np
+        
+        # Build feature vector exactly matching `clinical_columns` order
+        X_vals = []
+        for col in clinical_columns:
+            if col == 'predicted_probability':
+                X_vals.append(float(rf_probability))
+            else:
+                val = patient.get(col, 0.0)
+                if col == "gender":
+                    val_str = str(val).strip().upper()
+                    if val_str == "F" or val in [1, 1.0, "1", "1.0"]:
+                        val = 1.0
+                    elif val_str == "M" or val in [0, 0.0, "0", "0.0"]:
+                        val = 0.0
+                    else:
+                        val = 0.0
+                else:
+                    try:
+                        val = float(val) if val is not None and str(val).strip() != "" else 0.0
+                        if np.isnan(val):
+                            val = 0.0
+                    except (ValueError, TypeError):
+                        val = 0.0
+                X_vals.append(val)
+                
+        # Scale the 15 features using the provided scaler
+        # The scaler expects a 2D array or DataFrame with the same feature names
+        import pandas as pd
+        X_clinical_df = pd.DataFrame([X_vals], columns=clinical_columns)
+        Xc_scaled = scaler.transform(X_clinical_df)
+
+        # Extract image features if available
+        if image_paths:
+            img_feat = extract_image_features(image_paths)
+            if img_feat is not None:
+                X_final = np.hstack([Xc_scaled, img_feat.reshape(1, -1)])
+            else:
+                zero_img_feat = np.zeros((1, 2048))
+                X_final = np.hstack([Xc_scaled, zero_img_feat])
+        else:
+            zero_img_feat = np.zeros((1, 2048))
+            X_final = np.hstack([Xc_scaled, zero_img_feat])
+
+        # Make prediction
+        y_pred = model.predict(X_final)[0]
+        y_prob = model.predict_proba(X_final)[0][1]
+
+        return {
+            "Prediction": "CKD" if int(y_pred) == 1 else "Non-CKD",
+            "Probability": round(float(y_prob) * 100, 2)
+        }
+    except Exception as e:
+        import traceback
+        with open("debug_errors.txt", "a") as f:
+            f.write(f"Classifier 2 Error: {str(e)}\n")
+            f.write(traceback.format_exc() + "\n")
+        print(f"Classifier 2 error: {str(e)}")
         return {"Prediction": "Error", "Probability": 0.0, "Error": str(e)}
 
 
@@ -259,6 +337,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     egfr_col = data_cfg["target_column"]
 
     classifier_1_cfg = cfg.get("classifier_1", {})
+    classifier_2_cfg = cfg.get("classifier_2", {})
     random_forest_cfg = cfg.get("random_forest", {})
     images_dir = cfg.get("images_dir")
 
@@ -273,12 +352,16 @@ def run(config_path: str) -> List[Dict[str, Any]]:
     FULL_CLINICAL_COLUMNS = [
         "age", "gender", "Hypertension", "HBA", "HB", 
         "BMI", "Durationofdiabetes", "OHA", "INSULIN", "CHO", "TRI", "DR_Label", 
-        "DR_OD_OS", "EGFR"
+        "DR_OD_OS", "EGFR", "DR_SEVERITY_OD", "DR_SEVERITY_OS"
     ]
     
     for c in FULL_CLINICAL_COLUMNS:
         if c not in df.columns:
-            df[c] = 0.0
+            # Auto-derive DR_Label from DR_OD_OS if available
+            if c == 'DR_Label' and 'DR_OD_OS' in df.columns:
+                df['DR_Label'] = df['DR_OD_OS']
+            else:
+                df[c] = 0.0
 
     df_original = df.copy()
 
@@ -296,6 +379,21 @@ def run(config_path: str) -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"Warning: Could not load Classifier 1: {str(e)}")
             classifier_1_model = None
+
+    # Load Classifier 2 model
+    classifier_2_model = None
+    classifier_2_scaler = None
+    classifier_2_clinical_cols = None
+
+    if classifier_2_cfg:
+        try:
+            print("Loading Classifier 2...")
+            classifier_2_clinical_cols = joblib.load(classifier_2_cfg.get("Clinical_Cols"))
+            classifier_2_model = joblib.load(classifier_2_cfg.get("Model"))
+            classifier_2_scaler = joblib.load(classifier_2_cfg.get("Scaler"))
+        except Exception as e:
+            print(f"Warning: Could not load Classifier 2: {str(e)}")
+            classifier_2_model = None
 
     # Load Random Forest model package
     rf_pkg_14 = None
@@ -328,7 +426,7 @@ def run(config_path: str) -> List[Dict[str, Any]]:
 
     for idx, patient in df.iterrows():
         pid = str(patient[id_col])
-        actual = round(float(patient[egfr_col]), 2) if has_actual else None
+        actual = round(float(df_original.iloc[idx][egfr_col]), 2) if has_actual and egfr_col in df_original.columns else None
 
         # Get the original unencoded patient data
         patient_original = df_original.iloc[idx]
@@ -366,10 +464,34 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             patient_images = filter_images_for_patient(discovered_images, pid, total_patients)
             images_used = [os.path.basename(img) for img in patient_images]
 
+        # Run Classifier 2
+        classifier_2_result = None
+        if classifier_2_model is not None and classifier_2_scaler is not None and classifier_2_clinical_cols is not None:
+            rf_prob = rf_result["probability"] / 100.0 if rf_result and "probability" in rf_result else 0.0
+            
+            # Use same image paths as classifier 1
+            image_paths = []
+            if "image_path" in patient_original and patient_original["image_path"]:
+                image_paths = [patient_original["image_path"]] if isinstance(patient_original["image_path"], str) else patient_original["image_path"]
+            elif "image_paths" in patient_original and patient_original["image_paths"]:
+                image_paths = patient_original["image_paths"] if isinstance(patient_original["image_paths"], list) else [patient_original["image_paths"]]
+            elif discovered_images:
+                image_paths = filter_images_for_patient(discovered_images, pid, total_patients)
+
+            classifier_2_result = run_classifier_2(
+                patient_original,
+                list(classifier_2_clinical_cols), 
+                classifier_2_model,
+                classifier_2_scaler,
+                rf_prob,
+                image_paths if image_paths else None
+            )
+
         entry = {
             "Patient_ID": pid,
             "Actual_EGFR": actual,
             "Classifier1": classifier_1_result,
+            "Classifier2": classifier_2_result,
             "RandomForest": rf_result,
             "Images_Used": images_used,
         }
@@ -402,6 +524,16 @@ def run(config_path: str) -> List[Dict[str, Any]]:
             }
         else:
             converted_entry["Classifier1"] = {"label": "Not Available", "probability": 0.0}
+
+        # Add Classifier 2 results
+        if entry.get("Classifier2"):
+            classifier_2_data = entry["Classifier2"]
+            converted_entry["Classifier2"] = {
+                "label": classifier_2_data.get("Prediction", "Not Available"),
+                "probability": float(classifier_2_data.get("Probability", 0.0))
+            }
+        else:
+            converted_entry["Classifier2"] = {"label": "Not Available", "probability": 0.0}
 
         # Add Random Forest results
         if entry["RandomForest"]:
